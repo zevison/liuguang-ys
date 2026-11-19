@@ -11,15 +11,15 @@
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 
-  /* 设计系统 v3 语义 tokens: Minimalism + 天空蓝 CTA */
-  --color-bg: #0B1120;          /* 深蓝黑（带蓝调，不刺眼）*/
-  --color-surface: #111827;
-  --color-cta: #0EA5E9;         /* 天空蓝主 CTA */
-  --color-accent: #3B82F6;      /* 辅助亮蓝 */
-  --color-text: #F1F5F9;
-  --color-subtext: #94A3B8;
+  /* 设计系统 v4: 回归 v1 原始浅蓝 */
+  --color-bg: #0A1628;          /* 深蓝黑 */
+  --color-surface: #0F1E36;     /* 深蓝 */
+  --color-cta: #3B82F6;         /* 淡蓝主 CTA（用户最爱）*/
+  --color-accent: #6366F1;      /* 靛蓝辅助 */
+  --color-text: #EFF6FF;        /* 淡蓝白文字 */
+  --color-subtext: #8FA3C7;
   --color-border: #1E3A5F;
-  --color-focus: #0EA5E9;       /* 焦点环 = 主 CTA 蓝 */
+  --color-focus: #3B82F6;       /* 焦点环 = 主 CTA 蓝 */
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -56,10 +56,10 @@ html, body, #app {
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(14, 165, 233, 0.18);
+  background: rgba(59, 130, 246, 0.22);
   border-radius: 3px;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(14, 165, 233, 0.32); }
+::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.38); }
 
 /* ========== 视频播放器 ========== */
 video {
@@ -68,14 +68,14 @@ video {
   background: #000;
   border-radius: inherit;
 }
-video::-webkit-media-controls-panel { background-color: rgba(11, 17, 32, 0.75); }
+video::-webkit-media-controls-panel { background-color: rgba(10, 22, 40, 0.78); }
 
-/* ========== 焦点环（设计系统 v3: 天空蓝 + 发光） ========== */
+/* ========== 焦点环（设计系统 v4: 亮蓝发光） ========== */
 :focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
   border-radius: 6px;
-  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.18);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.18);
 }
 
 /* ========== Skip Link ========== */
@@ -85,13 +85,13 @@ video::-webkit-media-controls-panel { background-color: rgba(11, 17, 32, 0.75); 
   left: 1rem;
   z-index: 1000;
   padding: 0.5rem 1rem;
-  background: #0369A1;
+  background: #2563EB;
   color: #fff;
   font-size: 0.875rem;
   font-weight: 600;
   border-radius: 0.5rem;
   transition: top 0.2s var(--ease-out);
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.35);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
 }
 .skip-link:focus { top: 1rem; }
 
@@ -104,44 +104,44 @@ video::-webkit-media-controls-panel { background-color: rgba(11, 17, 32, 0.75); 
   }
 }
 
-/* ========== 选中文本色（天空蓝） ========== */
-::selection { background: #0EA5E9; color: #fff; }
+/* ========== 选中文本色（v4 亮蓝） ========== */
+::selection { background: #3B82F6; color: #fff; }
 
 /* ========== 选集滚动 ========== */
 .ep-grid::-webkit-scrollbar { width: 4px; }
 .ep-grid::-webkit-scrollbar-thumb {
-  background: rgba(14, 165, 233, 0.25);
+  background: rgba(59, 130, 246, 0.25);
   border-radius: 2px;
 }
 
-/* ========== 玻璃态（深蓝调） ========== */
+/* ========== 玻璃态（深蓝 + 亮蓝光晕） ========== */
 .glass {
-  background: rgba(17, 24, 39, 0.7);
+  background: rgba(15, 30, 54, 0.7);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.12);
 }
 .glass-strong {
-  background: rgba(17, 24, 39, 0.85);
+  background: rgba(15, 30, 54, 0.85);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.18);
 }
 
 /* ========== 发光效果 ========== */
 .glow-brand {
-  box-shadow: 0 0 32px rgba(14, 165, 233, 0.18), 0 0 64px rgba(14, 165, 233, 0.06);
+  box-shadow: 0 0 32px rgba(59, 130, 246, 0.22), 0 0 64px rgba(59, 130, 246, 0.08);
 }
 .glow-accent {
-  box-shadow: 0 0 32px rgba(59, 130, 246, 0.15), 0 0 64px rgba(59, 130, 246, 0.04);
+  box-shadow: 0 0 32px rgba(99, 102, 241, 0.18), 0 0 64px rgba(99, 102, 241, 0.06);
 }
 
-/* ========== 背景纹理（深蓝 + 蓝色光晕） ========== */
+/* ========== 背景纹理（v4 深蓝黑 + 亮蓝光晕） ========== */
 .bg-hero-gradient {
   background:
-    radial-gradient(ellipse at 20% 0%, rgba(56, 189, 248, 0.10) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 10%, rgba(59, 130, 246, 0.06) 0%, transparent 40%),
-    linear-gradient(180deg, #0B1120 0%, #0E1628 50%, #0B1120 100%);
+    radial-gradient(ellipse at 20% 0%, rgba(59, 130, 246, 0.14) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 10%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+    linear-gradient(180deg, #0A1628 0%, #0F1E36 50%, #0A1628 100%);
 }
 
 /* ========== 触摸目标（最小 44×44px） ========== */
@@ -154,22 +154,22 @@ button, a, [role="button"], input, select, textarea {
 
 /* ========== 图片占位 + 防底部缝隙 ========== */
 img {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.03), rgba(14, 165, 233, 0.06));
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.04), rgba(59, 130, 246, 0.08));
   line-height: 0;
 }
 
 /* ========== 深色输入框 ========== */
 input, textarea { color-scheme: dark; }
-input::placeholder, textarea::placeholder { color: rgba(148, 163, 184, 0.55); }
+input::placeholder, textarea::placeholder { color: rgba(143, 163, 199, 0.55); }
 
 /* ========== 统一过渡 ========== */
 button, a, [role="button"], input, select {
   transition: all 200ms var(--ease-out);
 }
 
-/* ========== 卡片 hover ========== */
+/* ========== 卡片 hover（v4 蓝边框高亮） ========== */
 .card-hover {
   transition: transform 250ms var(--ease-out), box-shadow 250ms var(--ease-out), border-color 250ms var(--ease-out);
 }
-.card-hover:hover { transform: translateY(-4px); border-color: rgba(14, 165, 233, 0.4); }
+.card-hover:hover { transform: translateY(-4px); border-color: rgba(59, 130, 246, 0.5); }
 .card-hover:active { transform: translateY(-2px); }

@@ -4,30 +4,31 @@ export default {
   theme: {
     extend: {
       colors: {
-        // 设计系统 v3: Minimalism & Swiss Style + 天空蓝 CTA（保留深色沉浸底）
-        // Primary: #0369A1 sky-blue, Secondary: #38BDF8 light-sky, Accent: #60A5FA
+        // 设计系统 v4: 回归 v1 原始浅蓝（用户最爱）
+        // HUD Sci-Fi 风格 + 亮蓝 CTA + 深蓝黑沉浸式背景
         brand: {
-          50: '#F0F9FF',
-          100: '#E0F2FE',
-          200: '#BAE6FD',
-          300: '#7DD3FC',
-          400: '#38BDF8',
-          500: '#0EA5E9',   // 主强调色：天空蓝（Play 按钮 / 主 CTA）
-          600: '#0369A1',
-          700: '#075985',
+          50: '#EFF6FF',
+          100: '#DBEAFE',
+          200: '#BFDBFE',
+          300: '#93C5FD',
+          400: '#60A5FA',
+          500: '#3B82F6',   // ★ v1 主强调色：淡蓝/亮蓝 CTA
+          600: '#2563EB',
+          700: '#1D4ED8',
         },
         accent: {
-          400: '#60A5FA',
-          500: '#3B82F6',   // 辅助强调色：亮蓝（链接/高亮）
-          600: '#2563EB',
+          400: '#818CF8',
+          500: '#6366F1',   // 辅助靛蓝（hover / secondary）
+          600: '#4F46E5',
         },
         ink: {
-          bg: '#0B1120',       // 深蓝黑背景（之前 #000 纯黑太硬，带点蓝调更协调）
-          surface: '#111827',  // 卡片背景（slate-900）
-          muted: '#1F2937',
+          bg: '#0A1628',       // ★ v1 原始深蓝黑背景
+          card: '#0F1E36',     // 卡片深蓝（更深）
+          surface: '#132440',  // 次表面
+          muted: '#0C1829',
           border: '#1E3A5F',   // 蓝调边框
-          text: '#F1F5F9',
-          subtext: '#94A3B8',
+          text: '#EFF6FF',
+          subtext: '#8FA3C7',
         },
       },
       fontFamily: {
