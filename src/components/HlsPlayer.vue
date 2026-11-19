@@ -129,6 +129,29 @@ async function init() {
   player.on('pause', () => { if (player?.video) savePosition(props.src, player.video.currentTime) })
   player.on('ended', () => { clearSaveTimer(); emit('ended') })
   player.on('error', () => emit('error', '播放出错，请尝试切换线路'))
+
+  // ===== Capacitor StatusBar 集成（Android App 全屏时隐藏状态栏）=====
+  // window.Capacitor 只在原生 App 里存在，Web/PWA 不影响
+  const C = (window as any).Capacitor
+  const StatusBar = C?.Plugins?.StatusBar
+  let wasFullscreen = false
+  player.on('fullscreen', (isFs: boolean) => {
+    if (!StatusBar) return
+    try {
+      if (isFs && !wasFullscreen) {
+        // 进入全屏
+        StatusBar.hide()
+        StatusBar.setBackgroundColor({ color: '#000000' })
+        StatusBar.setOverlaysWebView({ overlay: true })
+      } else if (!isFs && wasFullscreen) {
+        // 退出全屏
+        StatusBar.show()
+        StatusBar.setBackgroundColor({ color: '#000000' })
+        StatusBar.setOverlaysWebView({ overlay: false })
+      }
+      wasFullscreen = isFs
+    } catch (e) { /* Web 环境下 StatusBar 不存在，忽略 */ }
+  })
 }
 
 watch(() => props.src, () => { init() }, { immediate: true })
