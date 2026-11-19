@@ -47,7 +47,7 @@ function goPlay() {
           decoding="async"
           referrerpolicy="no-referrer"
           @load="imgLoaded = true"
-          class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.06]"
+          class="h-full w-full object-cover object-[center_top] transition duration-500 group-hover:scale-[1.06]"
           :class="imgLoaded ? 'opacity-100' : 'opacity-0'"
         />
         <!-- hover 渐变遮罩 + 播放图标（仅桌面鼠标设备显示，iOS Safari 触摸会冻结 hover 状态）-->

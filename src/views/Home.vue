@@ -110,21 +110,6 @@ onMounted(async () => {
           </form>
         </div>
 
-        <!-- 热搜词 -->
-        <div v-if="hotWords.length" class="mt-5 sm:mt-6 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 px-2">
-          <div class="flex items-center gap-1 shrink-0">
-            <Flame class="h-3 w-3 text-brand-500" />
-            <span class="text-[11px] font-medium text-brand-500">热搜</span>
-          </div>
-          <template v-for="(w, i) in hotWords" :key="i">
-            <span class="text-gray-700 text-xs">·</span>
-            <button
-              class="cursor-pointer text-xs text-gray-400 transition-colors hover:text-brand-400 hover:underline decoration-dotted underline-offset-4"
-              @click="onSearch(w)"
-            >{{ w }}</button>
-          </template>
-        </div>
-
         <!-- 搜索历史 -->
         <div v-if="history.length" class="mt-3 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1.5 px-2">
           <div class="flex items-center gap-1 shrink-0">
@@ -177,6 +162,21 @@ onMounted(async () => {
           :style="{ animationDelay: `${Math.min(i * 35, 300)}ms` }"
           class="animate-slide-up"
         />
+      </div>
+
+      <!-- 热搜词（移到热门下方，主路径不抢戏）-->
+      <div v-if="hotWords.length" class="mt-5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5">
+        <div class="flex items-center gap-1 shrink-0">
+          <Flame class="h-3.5 w-3.5 text-brand-500" />
+          <span class="text-xs font-medium text-brand-500">大家都在搜</span>
+        </div>
+        <template v-for="(w, i) in hotWords" :key="i">
+          <span class="text-gray-700 text-xs">·</span>
+          <button
+            class="cursor-pointer text-xs text-gray-400 transition-colors hover:text-brand-400 hover:underline decoration-dotted underline-offset-4"
+            @click="onSearch(w)"
+          >{{ w }}</button>
+        </template>
       </div>
     </section>
 
