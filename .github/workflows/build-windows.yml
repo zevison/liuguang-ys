@@ -29,7 +29,7 @@ jobs:
 
     - name: Build Windows NSIS + MSI
       working-directory: src-tauri
-      run: npx tauri build --bundles nsis,msi
+      run: npx tauri build --bundles nsis
       shell: bash
 
     - name: Verify bundles
