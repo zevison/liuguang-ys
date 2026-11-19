@@ -150,18 +150,22 @@ onMounted(async () => {
         <span class="text-xs text-gray-500">· 实时更新</span>
       </div>
 
-      <div v-if="loading" class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10">
-        <div v-for="i in 12" :key="i" class="aspect-[2/3] animate-pulse rounded-xl bg-white/[0.04] ring-1 ring-white/[0.04]" />
+      <div v-if="loading" class="flex justify-center">
+        <div class="inline-grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10">
+          <div v-for="i in 12" :key="i" class="aspect-[2/3] animate-pulse rounded-xl bg-white/[0.04] ring-1 ring-white/[0.04]" />
+        </div>
       </div>
 
-      <div v-else-if="popular.length" class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10">
-        <VideoCard
-          v-for="(item, i) in popular"
-          :key="item.id"
-          v-bind="item"
-          :style="{ animationDelay: `${Math.min(i * 35, 300)}ms` }"
-          class="animate-slide-up"
-        />
+      <div v-else-if="popular.length" class="flex justify-center">
+        <div class="inline-grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10">
+          <VideoCard
+            v-for="(item, i) in popular"
+            :key="item.id"
+            v-bind="item"
+            :style="{ animationDelay: `${Math.min(i * 35, 300)}ms` }"
+            class="animate-slide-up"
+          />
+        </div>
       </div>
 
       <!-- 热搜词（移到热门下方，主路径不抢戏）-->
