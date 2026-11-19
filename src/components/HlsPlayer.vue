@@ -181,6 +181,24 @@ defineExpose({
   -webkit-tap-highlight-color: transparent;
 }
 
+/* ========== video object-fit: cover 全屏铺满 ==========
+   桌面浏览器用原生 fullscreen API → video 默认 object-fit: contain 两边黑边
+   移动端 rotateFullscreen → 同样需要 cover 铺满
+   统一强制 object-fit: cover 解决所有设备 */
+.xgplayer video {
+  object-fit: cover !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* 全屏（原生 fullscreen 或 rotateFullscreen）都 cover 铺满 */
+.xgplayer-is-fullscreen video,
+.xgplayer-rotate-fullscreen video {
+  object-fit: cover !important;
+  width: 100vw !important;
+  height: 100vh !important;
+}
+
 /* ========== 根因修复：移除全屏暗角渐变 ==========
    xgplayer mobile preset 自带 .gradient 层覆盖整个视频画面，
    在 xgplayer-playing 时显示 top→bottom 0.6→0→0.6 透明黑渐变。
