@@ -106,24 +106,39 @@ function buildCoverUrl(m: MergedGroup): string {
 }
 
 /**
- * 代理 URL 转换 — 关键：App 模式直连，Web 模式走同源代理
+ * 代理 URL 转换 — 关键改动：全站默认直连（绕过 CDN 对 VPS IP 的防盗链封锁）
+ *
+ * 【根因】changzhang.tv 的部分 CDN（如 play.dyttzyv.com）对云服务器 IP 段封 403
+ *         但对用户家庭宽带/手机 IP 放行
+ *         所有 CDN 都返回 access-control-allow-origin:* → 浏览器可直连
+ *
+ * 【策略】全部默认直连（App/Web 模式一致）
+ *        只有 fetchJson 收到 CORS 错误时自动降级走 /api-proxy/ 重试
  *
  * App 模式（Tauri/Capacitor 原生 App）：
- *   没有后端 server.js，同源 /api-proxy/ 没人接 → 直接返回完整 URL
+ *   没有后端 server.js，同源 /api-proxy/ 没人接 → 必须直连站长 HTTPS API
  *
  * Web 模式（线上 VPS / Dev server）：
- *   有后端 server.js 监听 /api-proxy/ → 走代理
- *   开发环境下 CORS OK 站长直连省一次代理请求
+ *   CDN 全部带 CORS → 直连用用户 IP（绕过 VPS CDN 封锁）
+ *   API 也带 CORS → 直连省一次代理请求
+ *   fetchJson 失败时自动降级走 /api-proxy/
  */
 export function toProxyUrl(url: string): string {
   const m = url.match(/^https?:\/\/([^/]+)(\/.+)$/i)
   if (!m) return url
   const host = m[1]
   const path = m[2]
-  if (detectAppMode()) return url  // App 原生模式：直接请求完整 URL
+
+  // ==== 所有 CDN 都带 CORS → 直连用用户 IP（绕过 CDN 对 VPS IP 的防盗链封锁）====
+  // changzhangm3u8 解析出的 CDN 包括 czzyplay / jimxtc / dyttzyv 等
+  // 这些 CDN 对家庭宽带/手机 IP 放行，但对云服务器 IP（VPS）封 403
+  // 直连 = 用用户自己的 IP → 绕过封锁
+  if (detectAppMode()) return url  // App 原生模式：直连
   if (_proxyFailed) return url     // 代理已失效 → 降级直连
-  if (DEV && isCorsOk(host)) return url
-  return `/api-proxy/${host}${path}`
+
+  // Web 模式也默认直连 — 所有 CDN/API 都带 CORS 头
+  // fetchJson 失败时会自动降级走 /api-proxy/ 重试
+  return url
 }
 
 // 失败缓存
@@ -154,18 +169,23 @@ async function fetchJson(url: string): Promise<ApiResp> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT)
   try {
-    const targetUrl = toProxyUrl(url)
-    const resp = await fetch(targetUrl, { headers: FETCH_HEADERS, signal: controller.signal })
-    // 404 + 走代理路径 → App 里没人接 /api-proxy/ → 自动降级直连
-    if (!resp.ok && resp.status === 404 && targetUrl.startsWith('/api-proxy/') && !_proxyFailed) {
-      _proxyFailed = true
-      if (import.meta.env.DEV) console.warn('[api] /api-proxy/ 404 → 降级为直连模式')
-      const resp2 = await fetch(url, { headers: FETCH_HEADERS, signal: controller.signal })
-      if (!resp2.ok) throw new Error(`HTTP ${resp2.status}`)
-      return (await resp2.json()) as ApiResp
+    // Step 1: 先直连完整 URL（绕过 CDN 对 VPS IP 的防盗链封锁）
+    const resp = await fetch(url, { headers: FETCH_HEADERS, signal: controller.signal })
+    if (resp.ok) return (await resp.json()) as ApiResp
+
+    // Step 2: 直连失败 → 自动降级走 /api-proxy/ 重试
+    // 可能原因：CORS block、CDN 临时不通、网络波动
+    // proxy 路径显式拼接（toProxyUrl 现在默认直连，不再走 proxy）
+    const proxyUrl = url.replace(/^https?:\/\//i, '/api-proxy/')
+    if (!_proxyFailed) {
+      const resp2 = await fetch(proxyUrl, { headers: FETCH_HEADERS, signal: controller.signal })
+      if (resp2.ok) {
+        _proxyFailed = true  // 之后都走 proxy（省一次直连尝试）
+        return (await resp2.json()) as ApiResp
+      }
     }
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-    return (await resp.json()) as ApiResp
+
+    throw new Error(`HTTP ${resp.status}`)
   } finally {
     clearTimeout(timer)
   }
