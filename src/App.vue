@@ -1,12 +1,17 @@
+<script setup lang="ts">
+import AppHeader from './components/AppHeader.vue'
+</script>
+
 <template>
   <!-- Skip Link: 键盘用户跳过导航直达主内容 -->
   <a href="#main-content" class="skip-link">跳过导航 → 直接进入内容</a>
 
   <!-- 终极滚动容器：绕开 vivo/QQ/华为浏览器的 html/body overflow:hidden 注入 -->
-  <div id="__scroll__" class="text-ink-text bg-hero-gradient">
+  <div id="__scroll__" class="text-ink-text bg-hero-gradient min-h-screen flex flex-col">
+    <AppHeader />
     <main
       id="main-content"
-      class="mx-auto w-full px-3 pb-20 pt-3 sm:px-5 sm:pb-24 sm:pt-4 lg:px-8"
+      class="mx-auto w-full flex-1 px-3 pb-20 pt-3 sm:px-5 sm:pb-24 sm:pt-4 lg:px-8"
       :style="{
         paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)',
         paddingBottom: 'calc(env(safe-area-inset-bottom) + 5rem)',
