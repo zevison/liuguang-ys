@@ -150,11 +150,11 @@ onMounted(async () => {
         <span class="text-xs text-gray-500">· 实时更新</span>
       </div>
 
-      <div v-if="loading" class="grid w-fit mx-auto grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10">
-        <div v-for="i in 12" :key="i" class="aspect-[2/3] animate-pulse rounded-xl bg-white/[0.04] ring-1 ring-white/[0.04]" />
+      <div v-if="loading" class="grid mx-auto grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 max-w-5xl">
+        <div v-for="i in 6" :key="i" class="aspect-[2/3] animate-pulse rounded-xl bg-white/[0.04] ring-1 ring-white/[0.04]" />
       </div>
 
-      <div v-else-if="popular.length" class="grid w-fit mx-auto grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10">
+      <div v-else-if="popular.length" class="grid mx-auto grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 max-w-5xl">
         <VideoCard
           v-for="(item, i) in popular"
           :key="item.id"
