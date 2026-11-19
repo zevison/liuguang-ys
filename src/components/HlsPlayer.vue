@@ -174,12 +174,23 @@ defineExpose({
   --xg-color: #fff !important;
   --xg-primary: #3b82f6 !important;
   --xg-secondary: rgba(255, 255, 255, 0.5) !important;
-  --xg-background: rgba(0, 0, 0, 0.5) !important;
 }
 
 .xgplayer-mobile {
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* ========== 根因修复：移除全屏暗角渐变 ==========
+   xgplayer mobile preset 自带 .gradient 层覆盖整个视频画面，
+   在 xgplayer-playing 时显示 top→bottom 0.6→0→0.6 透明黑渐变。
+   这就是用户看到的"半透明黑框"——不是控制栏的局部渐变，
+   而是铺满整个视频区域的暗角。控制栏自身有独立的 48px 渐变，
+   不需要这个额外的全屏暗角。
+*/
+.xgplayer .gradient {
+  display: none !important;
+  background-image: none !important;
 }
 
 /* ========== rotateFullscreen 修正 ========== */

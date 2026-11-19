@@ -223,116 +223,123 @@ onMounted(tryAutoLoad)
       </div>
     </div>
 
-    <!-- 播放器区域 -->
-    <div class="relative w-full min-w-0">
-      <div class="absolute -inset-1 rounded-2xl bg-gradient-to-r from-brand-500/10 via-indigo-500/5 to-violet-500/10 opacity-60 blur-lg pointer-events-none" />
-      <div class="relative w-full rounded-2xl border border-white/[0.06] bg-black overflow-hidden shadow-[0_4px_32px_rgba(0,0,0,0.6)]">
-        <div v-if="loading" class="flex aspect-video items-center justify-center bg-black">
-          <div class="flex flex-col items-center gap-3">
-            <Loader2 class="h-10 w-10 animate-spin text-brand-500" />
-            <div class="text-xs text-gray-500">加载中...</div>
+    <!-- ========== 平板横屏分栏：lg+ 下播放器左 + 选集右 ========== -->
+    <div class="w-full min-w-0 block lg:flex lg:gap-5 lg:items-start">
+      <!-- 左侧：播放器 + 标题（占主宽）-->
+      <div class="flex-1 min-w-0 space-y-4 sm:space-y-5">
+        <!-- 播放器区域 -->
+        <div class="relative w-full min-w-0">
+          <div class="absolute -inset-1 rounded-2xl bg-gradient-to-r from-brand-500/10 via-indigo-500/5 to-violet-500/10 opacity-60 blur-lg pointer-events-none" />
+          <div class="relative w-full rounded-2xl border border-white/[0.06] bg-black overflow-hidden shadow-[0_4px_32px_rgba(0,0,0,0.6)]">
+            <div v-if="loading" class="flex aspect-video items-center justify-center bg-black">
+              <div class="flex flex-col items-center gap-3">
+                <Loader2 class="h-10 w-10 animate-spin text-brand-500" />
+                <div class="text-xs text-gray-500">加载中...</div>
+              </div>
+            </div>
+
+            <div v-else-if="err" class="aspect-video flex flex-col items-center justify-center p-6 bg-gradient-to-b from-black to-black/80 text-center">
+              <AlertCircle class="mb-2 h-8 w-8 text-red-400" />
+              <p class="text-sm text-red-400">{{ err }}</p>
+              <div class="mt-4 flex flex-wrap justify-center gap-2">
+                <button
+                  v-for="label in availableSourceLabels"
+                  :key="label"
+                  class="rounded-full px-3 py-1 text-xs transition hover:opacity-80 min-h-[32px]"
+                  :class="sourceStyle(label)"
+                  @click="onSwitchSource(label)"
+                >切换到 {{ label }}</button>
+              </div>
+            </div>
+
+            <template v-else-if="item">
+              <HlsPlayer :src="currentM3u8" :poster="item.cover || ''" @ended="onPlayerEnded" @prevEp="onPrevEp" @nextEp="onNextEp" />
+            </template>
           </div>
+
+          <!-- iOS 音量物理键提示（iOS Safari 禁止 JS 控制 volume） -->
+          <transition name="pwa-fade">
+            <div
+              v-if="isIOS"
+              class="mt-2 flex items-center gap-2 rounded-lg border border-amber-500/15 bg-amber-500/[0.06] px-3 py-2 text-[11px] text-amber-200/80"
+            >
+              <ChevronUp class="h-3 w-3 text-amber-400 shrink-0" />
+              <span class="truncate">音量请用 iPhone 物理键 ↑↓（iOS Safari 限制）</span>
+            </div>
+          </transition>
         </div>
 
-        <div v-else-if="err" class="aspect-video flex flex-col items-center justify-center p-6 bg-gradient-to-b from-black to-black/80 text-center">
-          <AlertCircle class="mb-2 h-8 w-8 text-red-400" />
-          <p class="text-sm text-red-400">{{ err }}</p>
-          <div class="mt-4 flex flex-wrap justify-center gap-2">
+        <!-- PWA 安装提醒（仅 iOS Safari） -->
+        <transition name="pwa-fade">
+          <div
+            v-if="showPwaTip"
+            class="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-gradient-to-r from-amber-500/10 to-orange-500/5 px-3 py-2.5 text-xs backdrop-blur-sm"
+          >
+            <Share class="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+            <div class="flex-1 min-w-0 leading-relaxed">
+              <div class="text-amber-300 font-medium mb-0.5">建议"添加到主屏幕" 📱</div>
+              <div class="text-amber-100/70">
+                Safari 下方
+                <Share class="inline-block h-3 w-3 align-middle mx-0.5 text-amber-300" />
+                → 添加到主屏幕 → 从图标打开 = 无地址栏 + 手势全可用
+              </div>
+            </div>
             <button
-              v-for="label in availableSourceLabels"
-              :key="label"
-              class="rounded-full px-3 py-1 text-xs transition hover:opacity-80 min-h-[32px]"
-              :class="sourceStyle(label)"
-              @click="onSwitchSource(label)"
-            >切换到 {{ label }}</button>
+              class="shrink-0 text-amber-400/60 hover:text-amber-300 p-0.5"
+              @click="dismissPwaTip"
+            ><X class="h-3.5 w-3.5" /></button>
           </div>
-        </div>
+        </transition>
 
-        <template v-else-if="item">
-          <HlsPlayer :src="currentM3u8" :poster="item.cover || ''" @ended="onPlayerEnded" @prevEp="onPrevEp" @nextEp="onNextEp" />
+        <!-- 标题 + 上下集 -->
+        <template v-if="item">
+          <div class="space-y-2">
+            <!-- 标题 + 源标签 + 上下集 -->
+            <div class="flex items-center gap-2 flex-wrap">
+              <div class="flex items-center gap-2 min-w-0 flex-1">
+                <h1 class="text-base sm:text-lg font-semibold text-white truncate">{{ item.title }}</h1>
+                <span v-if="currentSource" class="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium backdrop-blur-sm" :class="sourceStyle(currentSource)">
+                  {{ currentSource }}
+                </span>
+              </div>
+
+              <!-- 上一集 / 下一集 -->
+              <div class="flex items-center gap-1 shrink-0 ml-auto">
+                <button
+                  class="flex items-center gap-0.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2 py-1 text-[11px] text-gray-300 transition hover:border-brand-500/40 hover:text-brand-400 min-h-[28px] disabled:opacity-30 disabled:hover:border-white/[0.08] disabled:hover:text-gray-300"
+                  :disabled="!canPrevEp"
+                  @click="onPrevEp"
+                >
+                  <SkipBack class="h-3 w-3" />
+                  <span class="hidden sm:inline">上一集</span>
+                </button>
+                <button
+                  class="flex items-center gap-0.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2 py-1 text-[11px] text-gray-300 transition hover:border-brand-500/40 hover:text-brand-400 min-h-[28px] disabled:opacity-30 disabled:hover:border-white/[0.08] disabled:hover:text-gray-300"
+                  :disabled="!canNextEp"
+                  @click="onNextEp"
+                >
+                  <span class="hidden sm:inline">下一集</span>
+                  <SkipForward class="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+
+            <!-- 第二行：播放状态 -->
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+              <span class="inline-flex items-center gap-1">
+                <Play class="h-3 w-3 text-brand-400" />
+                正在播放 <span class="text-brand-300">{{ currentEpName }}</span>
+              </span>
+              <span v-if="item.update">{{ item.update }}</span>
+              <span v-if="item.year">{{ item.year }}</span>
+            </div>
+          </div>
         </template>
       </div>
+      <!-- /左侧 flex-1 结束 -->
 
-      <!-- iOS 音量物理键提示（iOS Safari 禁止 JS 控制 volume） -->
-      <transition name="pwa-fade">
-        <div
-          v-if="isIOS"
-          class="mt-2 flex items-center gap-2 rounded-lg border border-amber-500/15 bg-amber-500/[0.06] px-3 py-2 text-[11px] text-amber-200/80"
-        >
-          <ChevronUp class="h-3 w-3 text-amber-400 shrink-0" />
-          <span class="truncate">音量请用 iPhone 物理键 ↑↓（iOS Safari 限制）</span>
-        </div>
-      </transition>
-    </div>
-
-    <!-- PWA 安装提醒（仅 iOS Safari） -->
-    <transition name="pwa-fade">
-      <div
-        v-if="showPwaTip"
-        class="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-gradient-to-r from-amber-500/10 to-orange-500/5 px-3 py-2.5 text-xs backdrop-blur-sm"
-      >
-        <Share class="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
-        <div class="flex-1 min-w-0 leading-relaxed">
-          <div class="text-amber-300 font-medium mb-0.5">建议"添加到主屏幕" 📱</div>
-          <div class="text-amber-100/70">
-            Safari 下方
-            <Share class="inline-block h-3 w-3 align-middle mx-0.5 text-amber-300" />
-            → 添加到主屏幕 → 从图标打开 = 无地址栏 + 手势全可用
-          </div>
-        </div>
-        <button
-          class="shrink-0 text-amber-400/60 hover:text-amber-300 p-0.5"
-          @click="dismissPwaTip"
-        ><X class="h-3.5 w-3.5" /></button>
-      </div>
-    </transition>
-
-    <!-- 标题 + 上下集 -->
-    <template v-if="item">
-      <div class="space-y-2">
-        <!-- 标题 + 源标签 + 上下集 -->
-        <div class="flex items-center gap-2 flex-wrap">
-          <div class="flex items-center gap-2 min-w-0 flex-1">
-            <h1 class="text-base sm:text-lg font-semibold text-white truncate">{{ item.title }}</h1>
-            <span v-if="currentSource" class="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium backdrop-blur-sm" :class="sourceStyle(currentSource)">
-              {{ currentSource }}
-            </span>
-          </div>
-
-          <!-- 上一集 / 下一集 -->
-          <div class="flex items-center gap-1 shrink-0 ml-auto">
-            <button
-              class="flex items-center gap-0.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2 py-1 text-[11px] text-gray-300 transition hover:border-brand-500/40 hover:text-brand-400 min-h-[28px] disabled:opacity-30 disabled:hover:border-white/[0.08] disabled:hover:text-gray-300"
-              :disabled="!canPrevEp"
-              @click="onPrevEp"
-            >
-              <SkipBack class="h-3 w-3" />
-              <span class="hidden sm:inline">上一集</span>
-            </button>
-            <button
-              class="flex items-center gap-0.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2 py-1 text-[11px] text-gray-300 transition hover:border-brand-500/40 hover:text-brand-400 min-h-[28px] disabled:opacity-30 disabled:hover:border-white/[0.08] disabled:hover:text-gray-300"
-              :disabled="!canNextEp"
-              @click="onNextEp"
-            >
-              <span class="hidden sm:inline">下一集</span>
-              <SkipForward class="h-3 w-3" />
-            </button>
-          </div>
-        </div>
-
-        <!-- 第二行：播放状态 -->
-        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
-          <span class="inline-flex items-center gap-1">
-            <Play class="h-3 w-3 text-brand-400" />
-            正在播放 <span class="text-brand-300">{{ currentEpName }}</span>
-          </span>
-          <span v-if="item.update">{{ item.update }}</span>
-          <span v-if="item.year">{{ item.year }}</span>
-        </div>
-      </div>
-
-      <!-- 选集 -->
-      <div v-if="rawEpisodes.length" class="w-full min-w-0 rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-md p-3 sm:p-4">
+      <!-- 右侧：选集面板（lg+ 平板横屏时作为侧边栏，小屏在下方）-->
+      <div v-if="item && rawEpisodes.length" class="w-full mt-4 lg:mt-0 lg:w-[300px] xl:w-[340px] lg:shrink-0 rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-md p-3 sm:p-4 lg:sticky lg:top-4">
         <div class="mb-3 flex items-center justify-between">
           <h2 class="text-sm font-semibold text-white">
             选集
@@ -353,7 +360,7 @@ onMounted(tryAutoLoad)
         </div>
 
         <div
-          class="ep-grid grid max-h-64 overflow-y-auto gap-1.5 sm:gap-2 sm:max-h-72 grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12"
+          class="ep-grid grid max-h-64 overflow-y-auto gap-1.5 sm:gap-2 sm:max-h-72 lg:max-h-[calc(100vh-180px)] grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-3 xl:grid-cols-4"
         >
           <button
             v-for="ep in sortedEpisodes"
@@ -374,7 +381,8 @@ onMounted(tryAutoLoad)
           </button>
         </div>
       </div>
-    </template>
+    </div>
+    <!-- /平板横屏分栏 外层 flex 结束 -->
   </div>
 </template>
 
