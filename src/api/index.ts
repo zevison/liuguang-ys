@@ -17,7 +17,25 @@ const CORS_OK_HOSTS = ['changzhang.tv']
 // 开发环境变量（仅 DEV 时 CORS 站长直连省一次代理请求）
 const DEV = import.meta.env.DEV
 
+// App 模式检测（Tauri Desktop / Capacitor Android/iOS）：
+//   没有后端 server.js，同源 /api-proxy/ 没人接 → 必须直连站长 HTTPS API
+const isAppMode = (() => {
+  if (typeof window === 'undefined') return false
+  // Tauri: window.__TAURI__ 存在
+  if ((window as any).__TAURI__) return true
+  // Capacitor: window.Capacitor.isNativePlatform() === true
+  try {
+    const C = (window as any).Capacitor
+    if (C?.isNativePlatform?.()) return true
+  } catch {}
+  // URL 协议兜底
+  const href = window.location.href
+  if (href.startsWith('tauri://') || href.startsWith('file://')) return true
+  return false
+})()
+
 function isCorsOk(host: string): boolean {
+  if (isAppMode) return true  // App 原生 WebView 无 CORS 限制
   return CORS_OK_HOSTS.some((ok) => host === ok || host.endsWith('.' + ok))
 }
 
@@ -57,14 +75,21 @@ function buildCoverUrl(m: MergedGroup): string {
 }
 
 /**
- * 公网始终走同源代理 /api-proxy/<host>/<path>（server.js 转发到站长）
- * 开发环境下 CORS OK 站长直连，其他仍走代理
+ * 代理 URL 转换 — 关键：App 模式直连，Web 模式走同源代理
+ *
+ * App 模式（Tauri/Capacitor 原生 App）：
+ *   没有后端 server.js，同源 /api-proxy/ 没人接 → 直接返回完整 URL
+ *
+ * Web 模式（线上 VPS / Dev server）：
+ *   有后端 server.js 监听 /api-proxy/ → 走代理
+ *   开发环境下 CORS OK 站长直连省一次代理请求
  */
 export function toProxyUrl(url: string): string {
   const m = url.match(/^https?:\/\/([^/]+)(\/.+)$/i)
   if (!m) return url
   const host = m[1]
   const path = m[2]
+  if (isAppMode) return url  // App 原生模式：直接请求完整 URL
   if (DEV && isCorsOk(host)) return url
   return `/api-proxy/${host}${path}`
 }

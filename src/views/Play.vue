@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ChevronLeft, Play, Loader2, AlertCircle, ChevronUp, ChevronDown, X, SkipBack, SkipForward, Share } from 'lucide-vue-next'
-import { fetchDetailBySource, fetchDetailAny, fetchSearch, type VodItem } from '../api'
+import { fetchDetailBySource, fetchDetailAny, fetchSearch, toProxyUrl, type VodItem } from '../api'
 import { SOURCES, SOURCE_DISPLAY_ORDER, SOURCE_COLORS } from '../config/sources'
 import { addSearchHistory } from '../utils/history'
 import HlsPlayer from '../components/HlsPlayer.vue'
@@ -55,9 +55,7 @@ const sortedEpisodes = computed(() => {
 
 const currentM3u8 = computed(() => {
   const raw = rawEpisodes.value[activeEp.value]?.url || ''
-  const m = raw.match(/^https?:\/\/([^/]+)(.+)$/i)
-  if (!m) return raw
-  return `/api-proxy/${m[1]}${m[2]}`
+  return toProxyUrl(raw)
 })
 
 const availableSourceLabels = computed(() =>
