@@ -73,6 +73,12 @@ async function init() {
     playsinline: true,
     webkitPlaysinline: true,
 
+    // fill: 'cover' — 视频铺满容器，裁剪边缘不留黑边
+    // xgplayer 内部用 data-xgfill 属性控制：
+    //   .xgplayer[data-xgfill=cover] video { object-fit: cover }
+    // 不设置则默认 contain → 宽屏下两边黑边
+    fill: 'cover',
+
     // rotateFullscreen = CSS 全屏 + 旋转 90°（DOM 全保留，手势全可用）
     // needBackIcon = 全屏后顶部显示返回按钮
     fullscreen: {
@@ -182,21 +188,18 @@ defineExpose({
 }
 
 /* ========== video object-fit: cover 全屏铺满 ==========
-   桌面浏览器用原生 fullscreen API → video 默认 object-fit: contain 两边黑边
-   移动端 rotateFullscreen → 同样需要 cover 铺满
-   统一强制 object-fit: cover 解决所有设备 */
-.xgplayer video {
+   根因：没设置 fill 配置 → xgplayer 默认 contain → 宽屏黑边
+   正道：Player 初始化加 fill: 'cover'（data-xgfill="cover"）
+   下面 CSS 做双重保险 */
+.xgplayer[data-xgfill="cover"] video {
   object-fit: cover !important;
-  width: 100% !important;
-  height: 100% !important;
 }
 
-/* 全屏（原生 fullscreen 或 rotateFullscreen）都 cover 铺满 */
-.xgplayer-is-fullscreen video,
-.xgplayer-rotate-fullscreen video {
-  object-fit: cover !important;
-  width: 100vw !important;
-  height: 100vh !important;
+/* 全屏时 xg-video-container 默认 bottom:48px 留控制栏空间
+   全屏后我们要铺满整个屏幕 → bottom:0 */
+.xgplayer.xgplayer-is-fullscreen .xg-video-container,
+.xgplayer.xgplayer-is-cssfullscreen .xg-video-container {
+  bottom: 0 !important;
 }
 
 /* ========== 根因修复：移除全屏暗角渐变 ==========
