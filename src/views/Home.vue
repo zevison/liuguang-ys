@@ -61,7 +61,7 @@ onMounted(async () => {
       <div class="pointer-events-none absolute top-16 right-[-40px] h-[140px] w-[140px] rounded-full bg-indigo-500/10 blur-[60px] sm:top-20 sm:right-0 sm:h-[200px] sm:w-[200px]" />
       <div class="pointer-events-none absolute -bottom-10 left-[-40px] h-[120px] w-[120px] rounded-full bg-violet-500/8 blur-[50px] sm:left-0 sm:h-[180px] sm:w-[180px]" />
 
-      <div class="relative mx-auto max-w-2xl animate-slide-up">
+      <div class="relative mx-auto w-full max-w-xl animate-slide-up px-3 sm:px-0">
         <!-- Logo + 标题 -->
         <div class="mb-4 sm:mb-6 flex items-center justify-center gap-3">
           <div class="relative">

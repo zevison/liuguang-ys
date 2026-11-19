@@ -6,7 +6,7 @@
   <div id="__scroll__" class="text-ink-text bg-hero-gradient">
     <main
       id="main-content"
-      class="mx-auto w-full max-w-7xl px-3 pb-20 pt-3 sm:px-5 sm:pb-24 sm:pt-4 lg:px-8"
+      class="mx-auto w-full px-3 pb-20 pt-3 sm:px-5 sm:pb-24 sm:pt-4 lg:px-8"
       :style="{
         paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)',
         paddingBottom: 'calc(env(safe-area-inset-bottom) + 5rem)',
