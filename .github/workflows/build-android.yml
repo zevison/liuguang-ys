@@ -23,70 +23,38 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Configure Android SDK
-      run: |
-        echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-        echo "ANDROID_HOME=$ANDROID_HOME"
-        ls $ANDROID_SDK_ROOT/cmdline-tools/ 2>/dev/null || ls /usr/local/lib/android/sdk/cmdline-tools/
-        echo "sdkmanager available:"
-        find /usr/local/lib/android/sdk -name sdkmanager -type f 2>/dev/null || echo "not found in /usr/local/lib"
-        find $HOME/Android -name sdkmanager 2>/dev/null || echo "not found in ~/Android"
-      env:
-        ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-        ANDROID_HOME: /usr/local/lib/android/sdk
-
-    - name: Accept licenses + install SDK packages
+    - name: Install Android SDK packages
       run: |
         export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
-        yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || \
-          yes | $ANDROID_SDK_ROOT/cmdline-tools/$(ls $ANDROID_SDK_ROOT/cmdline-tools/ | tail -1)/bin/sdkmanager --licenses 2>/dev/null || true
-        SDKMANAGER=$(find $ANDROID_SDK_ROOT -name sdkmanager -type f | head -1)
-        echo "Using sdkmanager: $SDKMANAGER"
-        yes | $SDKMANAGER "platforms;android-34" "build-tools;34.0.0" "platform-tools"
-      env:
-        ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+        yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+        $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
+          "platforms;android-34" \
+          "build-tools;34.0.0" \
+          "platform-tools"
 
-    - name: Install deps
-      run: npm ci || npm install
-
-    - name: Build web
-      run: npm run build:ci
-
-    - name: Install Capacitor
-      run: npm install @capacitor/core @capacitor/cli @capacitor/android --save
-
-    - name: Init Capacitor config
+    - name: Install deps + build web
       run: |
-        if [ ! -f capacitor.config.ts ]; then
-          cat > capacitor.config.ts << 'EOF'
-          import type { CapacitorConfig } from '@capacitor/cli'
-          const config: CapacitorConfig = {
-            appId: 'com.liuguang.ys',
-            appName: '映界',
-            webDir: 'dist',
-            android: { allowMixedContent: true }
-          }
-          export default config
-          EOF
-        fi
+        npm ci || npm install
+        npm run build:ci
+
+    - name: Install Capacitor Android
+      run: npm install @capacitor/android --save
 
     - name: Add Android platform
-      run: npx cap add android 2>&1 || true
+      run: npx cap add android || true
 
-    - name: Copy web assets
-      run: npx cap copy android
+    - name: Copy + sync
+      run: |
+        npx cap copy android
+        npx cap sync android
 
-    - name: Sync Android deps
-      run: npx cap sync android
-
-    - name: Build debug APK
+    - name: Build APK
       working-directory: android
       run: ./gradlew assembleDebug
       env:
         ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-        JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.21-9/x64
 
-    - name: Upload APK artifact
+    - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: liuguang-ys-apk

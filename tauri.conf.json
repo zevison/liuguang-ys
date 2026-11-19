@@ -1,0 +1,27 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "映界",
+  "version": "1.0.0",
+  "identifier": "com.liuguang.ys",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build:ci",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [{
+      "title": "映界",
+      "width": 1280,
+      "height": 800,
+      "resizable": true,
+      "fullscreen": false
+    }],
+    "security": { "csp": null }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["public/icon-512.png"]
+  }
+}
