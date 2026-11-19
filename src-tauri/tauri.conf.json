@@ -11,25 +11,45 @@
   },
   "app": {
     "windows": [{
-      "title": "映界",
+      "label": "main",
+      "title": "映界 — 在线影视",
       "width": 1280,
       "height": 800,
+      "minWidth": 800,
+      "minHeight": 450,
       "resizable": true,
-      "fullscreen": false
+      "decorations": true,
+      "transparent": false,
+      "center": true,
+      "fullscreen": false,
+      "maximized": false,
+      "theme": null
     }],
-    "security": { "csp": null }
+    "security": {
+      "csp": null
+    }
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": ["nsis", "msi"],
     "icon": [
       "icons/icon.icns",
       "icons/icon.ico",
       "icons/icon.png",
-      "icons/icon32.png",
       "icons/icon128.png",
-      "icons/icon128@2x.png",
       "icons/icon512.png"
-    ]
-  }
+    ],
+    "category": "Video",
+    "shortDescription": "映界 — 在线影视播放器",
+    "longDescription": "映界影视 App，支持多线路源、HLS 播放、全屏观影体验。"
+  },
+  "plugins": {
+    "shell": {
+      "open": true
+    }
+  },
+  "frontendDist": "../dist",
+  "devUrl": "http://localhost:5173",
+  "beforeBuildCommand": "npm run build:ci",
+  "beforeDevCommand": "npm run dev"
 }

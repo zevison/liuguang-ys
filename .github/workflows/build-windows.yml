@@ -1,4 +1,4 @@
-name: Build Windows EXE
+name: Build Windows Installer
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-exe:
+  build-installer:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v4
@@ -27,15 +27,27 @@ jobs:
       run: npm install @tauri-apps/cli@^2 @tauri-apps/api@^2
       shell: bash
 
-    - name: Build EXE
+    - name: Build Windows NSIS + MSI
       working-directory: src-tauri
-      run: npx tauri build
+      run: npx tauri build --bundles nsis,msi
       shell: bash
 
-    - name: Upload EXE artifact
+    - name: Verify bundles
+      run: |
+        echo "=== NSIS ==="
+        ls -la src-tauri/target/release/bundle/nsis/ 2>/dev/null || echo "no nsis"
+        echo "=== MSI ==="
+        ls -la src-tauri/target/release/bundle/msi/ 2>/dev/null || echo "no msi"
+      shell: bash
+
+    - name: Upload NSIS installer
       uses: actions/upload-artifact@v4
       with:
-        name: liuguang-ys-exe
-        path: |
-          src-tauri/target/release/bundle/nsis/*.exe
-          src-tauri/target/release/*.exe
+        name: liuguang-ys-windows-setup
+        path: src-tauri/target/release/bundle/nsis/*.exe
+
+    - name: Upload MSI installer
+      uses: actions/upload-artifact@v4
+      with:
+        name: liuguang-ys-windows-msi
+        path: src-tauri/target/release/bundle/msi/*.msi
