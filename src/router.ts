@@ -4,6 +4,7 @@ const routes = [
   { path: '/', name: 'home', component: () => import('./views/Home.vue') },
   { path: '/search', name: 'search', component: () => import('./views/Search.vue') },
   { path: '/play', name: 'play', component: () => import('./views/Play.vue') },
+  { path: '/download', name: 'download', component: () => import('./views/Download.vue') },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 

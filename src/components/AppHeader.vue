@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Search, Film, Home, X } from 'lucide-vue-next'
+import { Search, Film, Home, X, Download } from 'lucide-vue-next'
 
 const router = useRouter()
 const route = useRoute()
@@ -15,6 +15,10 @@ function goHome() {
   }
 }
 
+function goDownload() {
+  router.push({ name: 'download' })
+}
+
 function onSearch() {
   const q = wd.value.trim()
   if (!q) return
@@ -23,6 +27,9 @@ function onSearch() {
 }
 
 const showSearch = computed(() => route.name !== 'home')
+const isDownloadPage = computed(() => route.name === 'download')
+
+import { ref } from 'vue'
 </script>
 
 <template>
@@ -45,8 +52,8 @@ const showSearch = computed(() => route.name !== 'home')
         <span class="hidden text-base font-bold tracking-wide text-white sm:block">映界</span>
       </button>
 
-      <!-- 全局搜索框（非首页显示，首页已有大搜索框）-->
-      <div v-if="showSearch" class="relative flex-1 max-w-xl">
+      <!-- 全局搜索框（非首页 & 非下载页显示）-->
+      <div v-if="showSearch && !isDownloadPage" class="relative flex-1 max-w-xl">
         <Search
           class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
         />
@@ -73,14 +80,17 @@ const showSearch = computed(() => route.name !== 'home')
         </button>
       </div>
 
-      <!-- 首页的"回到顶部"按钮 -->
+      <!-- 首页/下载页的"回到顶部"按钮占位 -->
+      <div v-else class="flex-1" />
+
+      <!-- 右上角下载按钮（所有页面都显示）-->
       <button
-        v-else
-        class="ml-auto flex h-9 items-center gap-1.5 rounded-full border border-white/10 bg-ink-card/60 px-4 text-sm text-gray-300 transition hover:border-brand-500/60 hover:text-white"
-        @click="goHome"
+        class="flex h-9 items-center gap-1.5 rounded-full border border-brand-500/30 bg-brand-500/10 px-4 text-sm font-medium text-brand-400 transition hover:border-brand-500/60 hover:bg-brand-500/20 hover:text-brand-300 active:scale-95"
+        :class="{ 'ring-2 ring-brand-500/40': isDownloadPage }"
+        @click="goDownload"
       >
-        <Home class="h-3.5 w-3.5" />
-        <span>首页</span>
+        <Download class="h-3.5 w-3.5" />
+        <span>下载</span>
       </button>
     </div>
   </header>
