@@ -47,9 +47,5 @@
     "shell": {
       "open": true
     }
-  },
-  "frontendDist": "../dist",
-  "devUrl": "http://localhost:5173",
-  "beforeBuildCommand": "npm run build:ci",
-  "beforeDevCommand": "npm run dev"
+  }
 }
