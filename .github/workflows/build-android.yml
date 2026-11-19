@@ -23,32 +23,54 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
+    - name: Install Android SDK packages
+      run: |
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+          "platforms;android-34" \
+          "build-tools;34.0.0" \
+          "platform-tools"
+      env:
+        ANDROID_HOME: ${{ env.ANDROID_HOME }}
 
     - name: Install deps
       run: npm ci || npm install
 
     - name: Build web
-      run: npm run build
+      run: npm run build:ci
 
     - name: Install Capacitor
-      run: npm install @capacitor/core @capacitor/cli @capacitor/android
+      run: npm install @capacitor/core @capacitor/cli @capacitor/android --save
+
+    - name: Init Capacitor config
+      run: |
+        if [ ! -f capacitor.config.ts ]; then
+          cat > capacitor.config.ts << 'EOF'
+          import type { CapacitorConfig } from '@capacitor/cli'
+          const config: CapacitorConfig = {
+            appId: 'com.liuguang.ys',
+            appName: '映界',
+            webDir: 'dist',
+            android: { allowMixedContent: true }
+          }
+          export default config
+          EOF
+        fi
 
     - name: Add Android platform
       run: npx cap add android 2>&1 || true
 
-    - name: Copy web assets
+    - name: Copy web assets to Android
       run: npx cap copy android
 
-    - name: Sync native deps
+    - name: Sync Android deps
       run: npx cap sync android
 
     - name: Build debug APK
       working-directory: android
       run: ./gradlew assembleDebug
 
-    - name: Upload APK
+    - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
         name: liuguang-ys-apk
