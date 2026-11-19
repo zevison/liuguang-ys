@@ -22,6 +22,14 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
-    "icon": ["public/icon-512.png"]
+    "icon": [
+      "icons/icon.icns",
+      "icons/icon.ico",
+      "icons/icon.png",
+      "icons/icon32.png",
+      "icons/icon128.png",
+      "icons/icon128@2x.png",
+      "icons/icon512.png"
+    ]
   }
 }
