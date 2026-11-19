@@ -10,39 +10,50 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+
+  /* 设计系统 v2 语义 tokens */
+  --color-bg: #000000;
+  --color-surface: #0C0C0D;
+  --color-cta: #E11D48;
+  --color-accent: #6366F1;
+  --color-text: #F8FAFC;
+  --color-subtext: #94A3B8;
+  --color-border: #312E81;
+  --color-focus: #E11D48;
+
+  /* 统一过渡 */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* ========== 全局基础 ========== */
-/* 终极滚动方案：绕开 vivo/QQ/华为浏览器强制注入的 overflow:hidden
-   外层锁死 html/body/#app → 内层 #__scroll__ 管真正的滚动 */
 html, body, #app {
   margin: 0;
   padding: 0;
-  /* 完整 height 链条：html → body → #app → #__scroll__ */
   height: 100%;
-  background: #060E1A;
-  color: #F8FAFC;
+  background: var(--color-bg);
+  color: var(--color-text);
   -webkit-tap-highlight-color: transparent;
   text-rendering: optimizeLegibility;
-  /* 关键：html/body/#app 都不做滚动容器，让内层 #__scroll__ 来滚 */
   overflow: hidden;
+  /* 防 iOS 自动缩放 */
+  -webkit-text-size-adjust: 100%;
 }
 
-/* 内层滚动容器：App.vue 里的 #__scroll__ 用这个滚 */
 #__scroll__ {
   height: 100%;
-  /* 强制滚动：绕开 vivo OriginOS / QQ X5 / 华为 WebView 的锁 */
   overflow-y: auto !important;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   overscroll-behavior-y: contain;
+  /* 安全区补偿（兼容刘海屏/挖孔屏）*/
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
-/* 选集/源切换等需要横向滑动的容器 */
 .no-scrollbar { touch-action: pan-x pan-y; }
-
-/* ========== 细滚动条 ========== */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
 
@@ -61,18 +72,33 @@ video {
   background: #000;
   border-radius: inherit;
 }
+video::-webkit-media-controls-panel { background-color: rgba(0, 0, 0, 0.5); }
 
-/* video 原生控件调整 */
-video::-webkit-media-controls-panel {
-  background-color: rgba(0, 0, 0, 0.5);
-}
-
-/* ========== 焦点环 ========== */
+/* ========== 焦点环（设计系统 v2: 电影院红 + 高对比度） ========== */
 :focus-visible {
-  outline: 2px solid #3B82F6;
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: 6px;
+  /* 发光效果增强可见性 */
+  box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.15);
 }
+
+/* ========== Skip Link（键盘无障碍） ========== */
+.skip-link {
+  position: fixed;
+  top: -100%;
+  left: 1rem;
+  z-index: 1000;
+  padding: 0.5rem 1rem;
+  background: #E11D48;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  transition: top 0.2s var(--ease-out);
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+}
+.skip-link:focus { top: 1rem; }
 
 /* ========== 减少动画偏好 ========== */
 @media (prefers-reduced-motion: reduce) {
@@ -83,26 +109,25 @@ video::-webkit-media-controls-panel {
   }
 }
 
-/* ========== 选中文本色 ========== */
-::selection { background: #3B82F6; color: #fff; }
+/* ========== 选中文本色（CTA 红） ========== */
+::selection { background: #E11D48; color: #fff; }
 
-/* ========== 选集滚动容器 ========== */
+/* ========== 选集滚动 ========== */
 .ep-grid::-webkit-scrollbar { width: 4px; }
 .ep-grid::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.12);
   border-radius: 2px;
 }
 
-/* ========== 玻璃态工具类 ========== */
+/* ========== 玻璃态 ========== */
 .glass {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(12, 12, 13, 0.6);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
-
 .glass-strong {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(12, 12, 13, 0.75);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -110,35 +135,46 @@ video::-webkit-media-controls-panel {
 
 /* ========== 发光效果 ========== */
 .glow-brand {
-  box-shadow: 0 0 40px rgba(59, 130, 246, 0.15), 0 0 80px rgba(59, 130, 246, 0.05);
+  box-shadow: 0 0 40px rgba(225, 29, 72, 0.15), 0 0 80px rgba(225, 29, 72, 0.05);
+}
+.glow-accent {
+  box-shadow: 0 0 40px rgba(99, 102, 241, 0.15), 0 0 80px rgba(99, 102, 241, 0.05);
 }
 
-/* ========== 背景纹理（微妙噪点/渐变） ========== */
+/* ========== 背景纹理（OLED 黑 + 微妙靛蓝光晕） ========== */
 .bg-hero-gradient {
   background:
-    radial-gradient(ellipse at 20% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 10%, rgba(99, 102, 241, 0.06) 0%, transparent 40%),
-    linear-gradient(180deg, #060E1A 0%, #081222 100%);
+    radial-gradient(ellipse at 20% 0%, rgba(99, 102, 241, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 10%, rgba(225, 29, 72, 0.08) 0%, transparent 40%),
+    linear-gradient(180deg, #000000 0%, #030308 50%, #000000 100%);
 }
 
-/* ========== 移动端触摸目标 ========== */
-button, a, [role="button"] {
-  /* 保证最小 44px 触摸目标（iOS 标准）*/
+/* ========== 触摸目标（最小 44×44px） ========== */
+button, a, [role="button"], input, select, textarea {
   min-height: 36px;
 }
 @media (max-width: 640px) {
-  button, a, [role="button"] { min-height: 36px; }
+  button, a, [role="button"] { min-height: 44px; }
 }
 
-/* ========== 图片占位防闪烁 ========== */
+/* ========== 图片占位防闪烁 + 防底部缝隙 ========== */
 img {
   background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.04));
+  line-height: 0;
 }
 
 /* ========== 深色输入框 ========== */
-input, textarea {
-  color-scheme: dark;
+input, textarea { color-scheme: dark; }
+input::placeholder, textarea::placeholder { color: rgba(148, 163, 184, 0.6); }
+
+/* ========== 可点击元素过渡（统一 200ms + ease-out） ========== */
+button, a, [role="button"], input, select {
+  transition: all 200ms var(--ease-out);
 }
-input::placeholder, textarea::placeholder {
-  color: rgba(156, 163, 175, 0.6);
+
+/* ========== 卡片 hover 动效优化 ========== */
+.card-hover {
+  transition: transform 250ms var(--ease-out), box-shadow 250ms var(--ease-out), border-color 250ms var(--ease-out);
 }
+.card-hover:hover { transform: translateY(-4px); }
+.card-hover:active { transform: translateY(-2px); }
