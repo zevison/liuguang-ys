@@ -59,10 +59,16 @@ async function init() {
   clearOldMemory()
   const savedPos = loadPosition(props.src)
 
-  player = new Player({
+  // ===== 设备感知配置 =====
+  // 桌面浏览器：默认 preset + 原生 fullscreen API（不旋转、不用触摸手势）
+  // 移动设备：MobilePreset + rotateFullscreen + 触摸手势
+  const IS_TOUCH = typeof window !== 'undefined' &&
+    ('ontouchstart' in window || navigator.maxTouchPoints > 0 ||
+     window.matchMedia('(pointer: coarse)').matches)
+
+  const playerConfig: any = {
     el: containerRef.value,
     url: props.src,
-    preset: MobilePreset,
     plugins: [HlsPlugin],
     hlsPlugin: {},
     poster: props.poster || '',
@@ -74,37 +80,34 @@ async function init() {
     webkitPlaysinline: true,
 
     // fill: 'cover' — 视频铺满容器，裁剪边缘不留黑边
-    // xgplayer 内部用 data-xgfill 属性控制：
-    //   .xgplayer[data-xgfill=cover] video { object-fit: cover }
-    // 不设置则默认 contain → 宽屏下两边黑边
     fill: 'cover',
-
-    // rotateFullscreen = CSS 全屏 + 旋转 90°（DOM 全保留，手势全可用）
-    // needBackIcon = 全屏后顶部显示返回按钮
-    fullscreen: {
-      rotateFullscreen: true,
-      needBackIcon: true,
-    },
-    miniProgressBar: true,
-
-    // mobile 手势：
-    // scopeL=0.5 左半屏亮度, scopeR=0.5 右半屏音量
-    // sniffer.os.isIos 已在 main.ts 被 patch 为 false → 音量分支也会跑
-    mobile: {
-      scopeL: 0.5,
-      scopeR: 0.5,
-      darkness: true,
-      maxDarkness: 0.7,
-      disablePress: false,
-      pressRate: 2,
-      gestureX: true,
-      gestureY: true,
-      isTouchingSeek: true,
-    },
 
     width: '100%',
     height: '100%',
-  })
+  }
+
+  if (IS_TOUCH) {
+    // ===== 移动端配置 =====
+    // rotateFullscreen: CSS 全屏 + 旋转 90°（竖屏→横屏，DOM 全保留）
+    playerConfig.preset = MobilePreset
+    playerConfig.fullscreen = { rotateFullscreen: true, needBackIcon: true }
+    playerConfig.miniProgressBar = true
+    // mobile 手势：左半屏亮度, 右半屏音量
+    // sniffer.os.isIos 已在 main.ts 被 patch 为 false → 音量分支也会跑
+    playerConfig.mobile = {
+      scopeL: 0.5, scopeR: 0.5,
+      darkness: true, maxDarkness: 0.7,
+      disablePress: false, pressRate: 2,
+      gestureX: true, gestureY: true,
+      isTouchingSeek: true,
+    }
+  } else {
+    // ===== 桌面端配置 =====
+    // 原生浏览器 fullscreen API（不旋转、不用 MobilePreset 的触摸逻辑）
+    playerConfig.fullscreen = { rotateFullscreen: false }
+  }
+
+  player = new Player(playerConfig)
 
   player.on('ready', () => {
     if (savedPos > 0 && savedPos < (player.duration || 0) - 2) {
