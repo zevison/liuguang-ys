@@ -20,16 +20,22 @@ export default defineConfig({
   },
 
   // ===== 构建优化 =====
-  // 1. 手动切分大依赖，避免 xgplayer/lucide 被打进 Play chunk 后首页也跟着加载
-  // 2. manualChunks 让 vue / vue-router 独立抽离 → 多页面复用
   build: {
     chunkSizeWarningLimit: 800,
+    // ===== 关键：禁用自动 modulePreload =====
+    // vite 默认给所有 async chunk 加 <link rel="modulepreload">
+    // xgplayer (554KB) 只在 Play 路由用 — 首页预拉纯浪费
+    // 我们在 transformIndexHtml 里手动控制只预加载 vue-core
+    modulePreload: false,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vue-core': ['vue', 'vue-router'],
-          'lucide': ['lucide-vue-next'],
-          'xgplayer': ['xgplayer', 'xgplayer-hls'],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('vconsole')) return 'vconsole'          // 独立 async chunk
+            if (id.includes('xgplayer')) return 'xgplayer'          // 独立 async chunk，Play 路由按需加载
+            if (id.includes('lucide')) return 'lucide'
+            if (id.includes('vue') || id.includes('vue-router')) return 'vue-core'
+          }
         },
       },
     },

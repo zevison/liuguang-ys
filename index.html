@@ -14,9 +14,30 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png?v=2" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=2" />
     <title>映界 · 多源影视搜索</title>
+
+    <!-- CDN 预连接：changzhangm3u8 解析出的封面/API/m3u8 CDN 域名
+         preconnect 提前建 TCP+TLS 连接 → 首次请求省 ~100ms
+         dns-prefetch 兜底老浏览器 -->
+    <link rel="preconnect" href="https://p1.czzyplay.com" crossorigin />
+    <link rel="preconnect" href="https://changzhang.tv" crossorigin />
+    <link rel="preconnect" href="https://svip.czzyplay.com" crossorigin />
+    <link rel="dns-prefetch" href="https://p1.czzyplay.com" />
+    <link rel="dns-prefetch" href="https://changzhang.tv" />
+    <link rel="dns-prefetch" href="https://svip.czzyplay.com" />
+
+    <!-- 字体 -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- PWA Service Worker（后台注册，不阻塞首屏） -->
+    <script>
+      if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {})
+        })
+      }
+    </script>
   </head>
   <body>
     <div id="app"></div>
