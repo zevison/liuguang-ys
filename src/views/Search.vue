@@ -99,6 +99,12 @@ function sourceStyle(label: string) {
         <input
           v-model="miniQ"
           type="text"
+          inputmode="search"
+          enterkeyhint="search"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
           placeholder="继续搜索..."
           class="flex-1 min-w-0 bg-transparent py-3 pl-2 pr-2 text-[16px] text-gray-200 placeholder:text-gray-500 focus:outline-none"
           @keyup.enter="onMiniSearch"

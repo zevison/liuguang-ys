@@ -91,7 +91,12 @@ onMounted(async () => {
               <input
                 v-model="wd"
                 type="text"
-                autofocus
+                inputmode="search"
+                enterkeyhint="search"
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
                 placeholder="输入剧名、电影名、演员..."
                 class="w-full min-w-0 rounded-l-full bg-transparent py-3.5 pl-11 sm:pl-14 pr-3 sm:pr-4 text-[16px] sm:text-base text-gray-200 placeholder:text-gray-500 focus:outline-none"
               />
