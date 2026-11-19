@@ -4,27 +4,29 @@ export default {
   theme: {
     extend: {
       colors: {
-        // 设计系统 v2: OLED 黑底 + 电影院红 CTA + 深靛蓝次色
-        // Pattern: Hero-Centric | Style: Dark Mode (OLED) | Keywords: cinema immersive
+        // 设计系统 v3: Minimalism & Swiss Style + 天空蓝 CTA（保留深色沉浸底）
+        // Primary: #0369A1 sky-blue, Secondary: #38BDF8 light-sky, Accent: #60A5FA
         brand: {
-          50: '#FEF2F2',
-          100: '#FEE2E2',
-          300: '#FDA4AF',
-          400: '#FB7185',
-          500: '#E11D48',   // 主强调色：电影院红（Play 按钮 / 主 CTA）
-          600: '#BE123C',
-          700: '#9F1239',
+          50: '#F0F9FF',
+          100: '#E0F2FE',
+          200: '#BAE6FD',
+          300: '#7DD3FC',
+          400: '#38BDF8',
+          500: '#0EA5E9',   // 主强调色：天空蓝（Play 按钮 / 主 CTA）
+          600: '#0369A1',
+          700: '#075985',
         },
         accent: {
-          500: '#6366F1',   // 次强调色：靛蓝（链接/辅助高亮）
-          600: '#4F46E5',
+          400: '#60A5FA',
+          500: '#3B82F6',   // 辅助强调色：亮蓝（链接/高亮）
+          600: '#2563EB',
         },
         ink: {
-          bg: '#000000',       // OLED 纯黑（省电 + 沉浸式）
-          surface: '#0C0C0D',  // 卡片背景
-          muted: '#181818',
-          border: '#312E81',   // 深靛蓝边框
-          text: '#F8FAFC',
+          bg: '#0B1120',       // 深蓝黑背景（之前 #000 纯黑太硬，带点蓝调更协调）
+          surface: '#111827',  // 卡片背景（slate-900）
+          muted: '#1F2937',
+          border: '#1E3A5F',   // 蓝调边框
+          text: '#F1F5F9',
           subtext: '#94A3B8',
         },
       },
@@ -39,32 +41,14 @@ export default {
         'scale-in': 'scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
       },
       keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        slideUp: {
-          '0%': { opacity: '0', transform: 'translateY(12px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        },
-        pulseSubtle: {
-          '0%, 100%': { opacity: '1' },
-          '50%': { opacity: '0.7' },
-        },
-        shimmer: {
-          '0%': { backgroundPosition: '-200% 0' },
-          '100%': { backgroundPosition: '200% 0' },
-        },
-        scaleIn: {
-          '0%': { opacity: '0', transform: 'scale(0.95)' },
-          '100%': { opacity: '1', transform: 'scale(1)' },
-        },
+        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+        slideUp: { '0%': { opacity: '0', transform: 'translateY(12px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+        pulseSubtle: { '0%, 100%': { opacity: '1' }, '50%': { opacity: '0.7' } },
+        shimmer: { '0%': { backgroundPosition: '-200% 0' }, '100%': { backgroundPosition: '200% 0' } },
+        scaleIn: { '0%': { opacity: '0', transform: 'scale(0.95)' }, '100%': { opacity: '1', transform: 'scale(1)' } },
       },
-      // 统一过渡曲线（Material Motion / iOS ease-out）
       easing: {
         'out': 'cubic-bezier(0.16, 1, 0.3, 1)',
-        'in': 'cubic-bezier(0.4, 0, 1, 1)',
-        'in-out': 'cubic-bezier(0.65, 0, 0.35, 1)',
       },
     },
   },

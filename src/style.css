@@ -11,17 +11,16 @@
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 
-  /* 设计系统 v2 语义 tokens */
-  --color-bg: #000000;
-  --color-surface: #0C0C0D;
-  --color-cta: #E11D48;
-  --color-accent: #6366F1;
-  --color-text: #F8FAFC;
+  /* 设计系统 v3 语义 tokens: Minimalism + 天空蓝 CTA */
+  --color-bg: #0B1120;          /* 深蓝黑（带蓝调，不刺眼）*/
+  --color-surface: #111827;
+  --color-cta: #0EA5E9;         /* 天空蓝主 CTA */
+  --color-accent: #3B82F6;      /* 辅助亮蓝 */
+  --color-text: #F1F5F9;
   --color-subtext: #94A3B8;
-  --color-border: #312E81;
-  --color-focus: #E11D48;
+  --color-border: #1E3A5F;
+  --color-focus: #0EA5E9;       /* 焦点环 = 主 CTA 蓝 */
 
-  /* 统一过渡 */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -33,9 +32,7 @@ html, body, #app {
   background: var(--color-bg);
   color: var(--color-text);
   -webkit-tap-highlight-color: transparent;
-  text-rendering: optimizeLegibility;
   overflow: hidden;
-  /* 防 iOS 自动缩放 */
   -webkit-text-size-adjust: 100%;
 }
 
@@ -46,7 +43,6 @@ html, body, #app {
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   overscroll-behavior-y: contain;
-  /* 安全区补偿（兼容刘海屏/挖孔屏）*/
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
@@ -60,10 +56,10 @@ html, body, #app {
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(14, 165, 233, 0.18);
   border-radius: 3px;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.16); }
+::-webkit-scrollbar-thumb:hover { background: rgba(14, 165, 233, 0.32); }
 
 /* ========== 视频播放器 ========== */
 video {
@@ -72,31 +68,30 @@ video {
   background: #000;
   border-radius: inherit;
 }
-video::-webkit-media-controls-panel { background-color: rgba(0, 0, 0, 0.5); }
+video::-webkit-media-controls-panel { background-color: rgba(11, 17, 32, 0.75); }
 
-/* ========== 焦点环（设计系统 v2: 电影院红 + 高对比度） ========== */
+/* ========== 焦点环（设计系统 v3: 天空蓝 + 发光） ========== */
 :focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
   border-radius: 6px;
-  /* 发光效果增强可见性 */
-  box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.15);
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.18);
 }
 
-/* ========== Skip Link（键盘无障碍） ========== */
+/* ========== Skip Link ========== */
 .skip-link {
   position: fixed;
   top: -100%;
   left: 1rem;
   z-index: 1000;
   padding: 0.5rem 1rem;
-  background: #E11D48;
+  background: #0369A1;
   color: #fff;
   font-size: 0.875rem;
   font-weight: 600;
   border-radius: 0.5rem;
   transition: top 0.2s var(--ease-out);
-  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.35);
 }
 .skip-link:focus { top: 1rem; }
 
@@ -109,44 +104,44 @@ video::-webkit-media-controls-panel { background-color: rgba(0, 0, 0, 0.5); }
   }
 }
 
-/* ========== 选中文本色（CTA 红） ========== */
-::selection { background: #E11D48; color: #fff; }
+/* ========== 选中文本色（天空蓝） ========== */
+::selection { background: #0EA5E9; color: #fff; }
 
 /* ========== 选集滚动 ========== */
 .ep-grid::-webkit-scrollbar { width: 4px; }
 .ep-grid::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(14, 165, 233, 0.25);
   border-radius: 2px;
 }
 
-/* ========== 玻璃态 ========== */
+/* ========== 玻璃态（深蓝调） ========== */
 .glass {
-  background: rgba(12, 12, 13, 0.6);
+  background: rgba(17, 24, 39, 0.7);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(56, 189, 248, 0.1);
 }
 .glass-strong {
-  background: rgba(12, 12, 13, 0.75);
+  background: rgba(17, 24, 39, 0.85);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.15);
 }
 
 /* ========== 发光效果 ========== */
 .glow-brand {
-  box-shadow: 0 0 40px rgba(225, 29, 72, 0.15), 0 0 80px rgba(225, 29, 72, 0.05);
+  box-shadow: 0 0 32px rgba(14, 165, 233, 0.18), 0 0 64px rgba(14, 165, 233, 0.06);
 }
 .glow-accent {
-  box-shadow: 0 0 40px rgba(99, 102, 241, 0.15), 0 0 80px rgba(99, 102, 241, 0.05);
+  box-shadow: 0 0 32px rgba(59, 130, 246, 0.15), 0 0 64px rgba(59, 130, 246, 0.04);
 }
 
-/* ========== 背景纹理（OLED 黑 + 微妙靛蓝光晕） ========== */
+/* ========== 背景纹理（深蓝 + 蓝色光晕） ========== */
 .bg-hero-gradient {
   background:
-    radial-gradient(ellipse at 20% 0%, rgba(99, 102, 241, 0.12) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 10%, rgba(225, 29, 72, 0.08) 0%, transparent 40%),
-    linear-gradient(180deg, #000000 0%, #030308 50%, #000000 100%);
+    radial-gradient(ellipse at 20% 0%, rgba(56, 189, 248, 0.10) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 10%, rgba(59, 130, 246, 0.06) 0%, transparent 40%),
+    linear-gradient(180deg, #0B1120 0%, #0E1628 50%, #0B1120 100%);
 }
 
 /* ========== 触摸目标（最小 44×44px） ========== */
@@ -157,24 +152,24 @@ button, a, [role="button"], input, select, textarea {
   button, a, [role="button"] { min-height: 44px; }
 }
 
-/* ========== 图片占位防闪烁 + 防底部缝隙 ========== */
+/* ========== 图片占位 + 防底部缝隙 ========== */
 img {
-  background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.04));
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.03), rgba(14, 165, 233, 0.06));
   line-height: 0;
 }
 
 /* ========== 深色输入框 ========== */
 input, textarea { color-scheme: dark; }
-input::placeholder, textarea::placeholder { color: rgba(148, 163, 184, 0.6); }
+input::placeholder, textarea::placeholder { color: rgba(148, 163, 184, 0.55); }
 
-/* ========== 可点击元素过渡（统一 200ms + ease-out） ========== */
+/* ========== 统一过渡 ========== */
 button, a, [role="button"], input, select {
   transition: all 200ms var(--ease-out);
 }
 
-/* ========== 卡片 hover 动效优化 ========== */
+/* ========== 卡片 hover ========== */
 .card-hover {
   transition: transform 250ms var(--ease-out), box-shadow 250ms var(--ease-out), border-color 250ms var(--ease-out);
 }
-.card-hover:hover { transform: translateY(-4px); }
+.card-hover:hover { transform: translateY(-4px); border-color: rgba(14, 165, 233, 0.4); }
 .card-hover:active { transform: translateY(-2px); }
