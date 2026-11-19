@@ -17,25 +17,56 @@ const CORS_OK_HOSTS = ['changzhang.tv']
 // 开发环境变量（仅 DEV 时 CORS 站长直连省一次代理请求）
 const DEV = import.meta.env.DEV
 
-// App 模式检测（Tauri Desktop / Capacitor Android/iOS）：
+// App 模式动态检测（运行时 getter，每次调用时重新检查）：
 //   没有后端 server.js，同源 /api-proxy/ 没人接 → 必须直连站长 HTTPS API
-const isAppMode = (() => {
+//
+// 检测维度（覆盖所有容器）：
+//   1. window.__TAURI__           — Tauri Desktop (Windows/macOS/Linux)
+//   2. window.Capacitor.isNativePlatform() — Capacitor Android/iOS
+//   3. location.origin            — Tauri=http://tauri.localhost, Capacitor=https://localhost
+//   4. location.protocol          — tauri://, capacitor://, file://
+//   5. __FORCE_APP_MODE__ 手动开关 — vconsole 调试用
+let _forceAppMode = false
+;(window as any).__FORCE_APP_MODE = () => { _forceAppMode = true }
+function detectAppMode(): boolean {
+  if (_forceAppMode) return true
   if (typeof window === 'undefined') return false
-  // Tauri: window.__TAURI__ 存在
+  // Tauri API 存在
   if ((window as any).__TAURI__) return true
-  // Capacitor: window.Capacitor.isNativePlatform() === true
+  // Capacitor 原生
   try {
     const C = (window as any).Capacitor
     if (C?.isNativePlatform?.()) return true
   } catch {}
+  // Tauri Windows origin: http://tauri.localhost
+  const origin = window.location.origin || ''
+  if (origin.includes('tauri.localhost')) return true
+  // Capacitor Android origin: https://localhost
+  if (origin === 'https://localhost' || origin === 'http://localhost') {
+    // 但 localhost 也可能是 Vite dev server — 加 Capacitor 再确认
+    if ((window as any).Capacitor) return true
+  }
   // URL 协议兜底
-  const href = window.location.href
-  if (href.startsWith('tauri://') || href.startsWith('file://')) return true
+  const proto = window.location.protocol || ''
+  if (proto === 'tauri:' || proto === 'capacitor:' || proto === 'file:') return true
   return false
-})()
+}
+// 模块初始化时先打一次日志（生产环境不输出）
+if (import.meta.env.DEV) {
+  try { console.log('[api] isAppMode:', detectAppMode(), {
+    hasTauri: !!(window as any).__TAURI__,
+    hasCapacitor: !!(window as any).Capacitor,
+    origin: window.location.origin,
+    protocol: window.location.protocol,
+  }) } catch {}
+}
+
+// 运行时降级标记：如果 /api-proxy/ 返回 404（App 里没人接），自动降级为直连
+let _proxyFailed = false
 
 function isCorsOk(host: string): boolean {
-  if (isAppMode) return true  // App 原生 WebView 无 CORS 限制
+  if (detectAppMode()) return true
+  if (_proxyFailed) return true  // 代理已失效 → 全部直连
   return CORS_OK_HOSTS.some((ok) => host === ok || host.endsWith('.' + ok))
 }
 
@@ -89,7 +120,8 @@ export function toProxyUrl(url: string): string {
   if (!m) return url
   const host = m[1]
   const path = m[2]
-  if (isAppMode) return url  // App 原生模式：直接请求完整 URL
+  if (detectAppMode()) return url  // App 原生模式：直接请求完整 URL
+  if (_proxyFailed) return url     // 代理已失效 → 降级直连
   if (DEV && isCorsOk(host)) return url
   return `/api-proxy/${host}${path}`
 }
@@ -122,7 +154,17 @@ async function fetchJson(url: string): Promise<ApiResp> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT)
   try {
-    const resp = await fetch(toProxyUrl(url), { headers: FETCH_HEADERS, signal: controller.signal })
+    const targetUrl = toProxyUrl(url)
+    const resp = await fetch(targetUrl, { headers: FETCH_HEADERS, signal: controller.signal })
+    // 404 + 走代理路径 → App 里没人接 /api-proxy/ → 自动降级直连
+    if (!resp.ok && resp.status === 404 && targetUrl.startsWith('/api-proxy/') && !_proxyFailed) {
+      _proxyFailed = true
+      if (import.meta.env.DEV) console.warn('[api] /api-proxy/ 404 → 降级为直连模式')
+      const resp2 = await fetch(url, { headers: FETCH_HEADERS, signal: controller.signal })
+      if (!resp2.ok) throw new Error(`HTTP ${resp2.status}`)
+      return (await resp2.json()) as ApiResp
+    }
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
     return (await resp.json()) as ApiResp
   } finally {
     clearTimeout(timer)
