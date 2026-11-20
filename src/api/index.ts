@@ -423,14 +423,27 @@ export async function fetchHotTop(limit = 6): Promise<{ items: HotItem[]; source
   const source = SOURCES.find(s => s.label === '4K')!
   const host = source.apiHosts[0]
 
+  // 取 top 50 → 按上架时间 vod_time 倒序 → 前 N 条 = 近期热门更新
+  // （MacCMS top 接口只返回全站历史总热门，没有时间维度排行）
   const raw = await withTimeout(
-    fetchJson(`${host}/?${new URLSearchParams({ ac: 'top', type: '0', limit: String(limit) }).toString()}`),
+    fetchJson(`${host}/?${new URLSearchParams({ ac: 'top', type: '0', limit: String(50) }).toString()}`),
     FETCH_TIMEOUT,
   )
   if (!raw?.list?.length) throw new Error('热门列表不可用')
 
-  // 全站热门榜前 N 条（无分类配额，播放量从高到低）
-  const picked = raw.list.slice(0, limit)
+  const now = Date.now()
+  const WEEK = 7 * 24 * 60 * 60 * 1000
+
+  // 优先取近 7 天上架的热门作品，不足再用 older 兜底
+  const recent: typeof raw.list = []
+  const older: typeof raw.list = []
+  for (const item of raw.list) {
+    const ts = Date.parse((item.vod_time || '').replace(' ', 'T')) || 0
+    if (ts && now - ts < WEEK) recent.push(item)
+    else older.push(item)
+  }
+
+  const picked = [...recent, ...older].slice(0, limit)
 
   const items: HotItem[] = picked.map(item => ({
     id: item.vod_id,
