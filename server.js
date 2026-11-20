@@ -366,12 +366,98 @@ async function proxyApi(req, res) {
   }
 }
 
+// ===== 搜索热词统计（方案 B）=====
+// 持久化到 JSON 文件，Node 进程重启不丢。冷启动时空数组 → 前端 fallback 到 ac=top。
+const HOTWORDS_FILE = path.join(__dirname, 'hotwords.json')
+const HOTWORDS_MAX = 200          // 内存 top 200 条
+const HOTWORDS_TOP_N = 6          // 对外返回前 6
+const HOTWORDS_LAST_N_HOURS = 168 // 只统计近 7 天的搜索（旧词自动淘汰）
+
+function loadHotwords() {
+  try {
+    if (fs.existsSync(HOTWORDS_FILE)) {
+      const raw = JSON.parse(fs.readFileSync(HOTWORDS_FILE, 'utf-8'))
+      return new Map(Object.entries(raw))
+    }
+  } catch {}
+  return new Map()
+}
+function saveHotwords(m) {
+  try { fs.writeFileSync(HOTWORDS_FILE, JSON.stringify(Object.fromEntries(m.entries()))) } catch {}
+}
+// hotwords: Map<word, { count: number, ts: number }>
+let hotwords = loadHotwords()
+// 每 10 分钟写一次盘（不阻塞每次搜索请求）
+let hotwordsDirty = false
+setInterval(() => { if (hotwordsDirty) { saveHotwords(hotwords); hotwordsDirty = false } }, 10 * 60 * 1000)
+
+function logHotword(word) {
+  if (!word || typeof word !== 'string') return
+  const w = word.trim().slice(0, 20)
+  if (!w || w.length < 1) return
+  const now = Date.now()
+  const existing = hotwords.get(w)
+  if (existing) { existing.count += 1; existing.ts = now }
+  else hotwords.set(w, { count: 1, ts: now })
+  hotwordsDirty = true
+}
+
+function getTopHotwords(n = HOTWORDS_TOP_N) {
+  const cutoff = Date.now() - HOTWORDS_LAST_N_HOURS * 3600 * 1000
+  return [...hotwords.entries()]
+    .filter(([, v]) => v.ts >= cutoff)
+    .sort((a, b) => b[1].count - a[1].count || b[1].ts - a[1].ts)
+    .slice(0, n)
+    .map(([w]) => w)
+}
+
+async function handleHotwordApi(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', '*')
+  if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return }
+
+  try {
+    if (req.method === 'GET') {
+      const top = getTopHotwords(HOTWORDS_TOP_N)
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ words: top, count: hotwords.size }))
+      return
+    }
+    if (req.method === 'POST') {
+      let body = ''
+      req.on('data', chunk => body += chunk)
+      req.on('end', () => {
+        try {
+          const parsed = JSON.parse(body || '{}')
+          if (parsed.q) logHotword(String(parsed.q))
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ ok: true }))
+        } catch {
+          // 也兼容 form-urlencoded: q=xxx
+          const m = body.match(/(?:^|&)q=([^&]+)/)
+          if (m) logHotword(decodeURIComponent(m[1]))
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ ok: true }))
+        }
+      })
+      return
+    }
+  } catch (e) {
+    res.writeHead(500, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ error: String(e?.message || e) }))
+  }
+}
+
 const server = http.createServer((req, res) => {
   const url = req.url || '/'
   if (url === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({ ok: true, ts: Date.now(), uptime: process.uptime() }))
     return
+  }
+  if (url === '/api-hotwords' || url.startsWith('/api-hotwords')) {
+    handleHotwordApi(req, res); return
   }
   if (url.startsWith('/api-proxy/')) {
     proxyApi(req, res)

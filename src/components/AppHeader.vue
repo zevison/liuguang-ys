@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Search, Film, Home, X, Download } from 'lucide-vue-next'
+import { logSearchWord } from '../api'
 
 const router = useRouter()
 const route = useRoute()
@@ -23,6 +24,7 @@ function onSearch() {
   const q = wd.value.trim()
   if (!q) return
   wd.value = ''
+  logSearchWord(q)                          // 上报关键词到 VPS（sendBeacon，不阻塞）
   router.push({ name: 'search', query: { q } })
 }
 

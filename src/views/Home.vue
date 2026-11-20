@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search, Film, Flame, Sparkles, Clock, X } from 'lucide-vue-next'
-import { fetchHotTop, fetchHotKeywords, type HotItem } from '../api'
+import { fetchHotTop, fetchHotKeywords, logSearchWord, type HotItem } from '../api'
 import VideoCard from '../components/VideoCard.vue'
 import { getSearchHistory, addSearchHistory, clearSearchHistory } from '../utils/history'
 
@@ -18,6 +18,7 @@ function onSearch(kw?: string) {
   const q = (kw ?? wd.value).trim()
   if (!q) return
   addSearchHistory(q)
+  logSearchWord(q)                          // 上报关键词到 VPS（sendBeacon，不阻塞）
   router.push({ name: 'search', query: { q } })
 }
 
@@ -168,7 +169,7 @@ onMounted(async () => {
       <div v-if="hotWords.length" class="mt-5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5">
         <div class="flex items-center gap-1 shrink-0">
           <Flame class="h-3.5 w-3.5 text-brand-500" />
-          <span class="text-xs font-medium text-brand-500">大家都在搜</span>
+          <span class="text-xs font-medium text-brand-500">今日发现</span>
         </div>
         <template v-for="(w, i) in hotWords" :key="i">
           <span class="text-gray-700 text-xs">·</span>

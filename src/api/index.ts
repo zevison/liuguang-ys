@@ -465,24 +465,70 @@ export async function fetchHotTop(limit = 6): Promise<{ items: HotItem[]; source
   return { items, source: '聚合' }
 }
 
-// ===== 热搜词（首页用，top 接口前若干作品的标题）=====
+// ===== 热搜词：优先 VPS 真实统计，冷启动 fallback ac=top 新片标题 =====
 
-const hotKwCache = { words: null as string[] | null, expireAt: 0 }
+const hotKwCache = { words: null as string[] | null, expireAt: 0, source: '' }
 
 export async function fetchHotKeywords(limit = 6): Promise<string[]> {
   if (hotKwCache.words && Date.now() < hotKwCache.expireAt) {
     return hotKwCache.words
   }
-  const host = SOURCES[0].apiHosts[0]
-  const raw = await withTimeout(
-    fetchJson(`${host}/?${new URLSearchParams({ ac: 'top', type: '0', limit: String(limit * 3) }).toString()}`),
-    FETCH_TIMEOUT,
-  )
-  if (!raw?.list?.length) return []
-  const words = raw.list.map(r => r.vod_name || '').filter(Boolean).slice(0, limit)
-  hotKwCache.words = words
-  hotKwCache.expireAt = Date.now() + HOT_CACHE_TTL
-  return words
+
+  // 1. 优先 VPS 真实热词（用户真实搜索产生的）
+  try {
+    const res = await fetch(`${import.meta.env.BASE_URL}api-hotwords`, {
+      signal: AbortSignal.timeout(2500),
+      cache: 'no-store',
+    })
+    if (res.ok) {
+      const data = await res.json()
+      if (data?.words?.length) {
+        const words = data.words.slice(0, limit)
+        hotKwCache.words = words
+        hotKwCache.expireAt = Date.now() + HOT_CACHE_TTL
+        hotKwCache.source = 'real'
+        return words
+      }
+    }
+  } catch { /* VPS 热词接口失败 → fallback */ }
+
+  // 2. fallback: ac=top 取新片标题（诚实描述为"新片速递"）
+  try {
+    const host = SOURCES[0].apiHosts[0]
+    const raw = await withTimeout(
+      fetchJson(`${host}/?${new URLSearchParams({ ac: 'top', type: '0', limit: String(limit * 3) }).toString()}`),
+      FETCH_TIMEOUT,
+    )
+    if (raw?.list?.length) {
+      const words = raw.list.map(r => r.vod_name || '').filter(Boolean).slice(0, limit)
+      hotKwCache.words = words
+      hotKwCache.expireAt = Date.now() + HOT_CACHE_TTL
+      hotKwCache.source = 'top-fallback'
+      return words
+    }
+  } catch {}
+
+  return []
+}
+
+/** 搜索时调用：上报关键词到 VPS，不阻塞搜索流程 */
+export function logSearchWord(q: string) {
+  const word = q.trim()
+  if (!word || word.length > 40) return
+  const url = `${import.meta.env.BASE_URL}api-hotwords`
+  // sendBeacon: 页面关闭时也能发，且不阻塞导航
+  if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+    try {
+      navigator.sendBeacon(url, JSON.stringify({ q: word }))
+      return
+    } catch {}
+  }
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ q: word }),
+    keepalive: true,
+  }).catch(() => {})
 }
 
 // ===== 详情（按指定源）=====
