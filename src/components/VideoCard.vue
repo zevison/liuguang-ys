@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { SOURCE_COLORS, SOURCE_DISPLAY_ORDER } from '../config/sources'
+import { getCoverUrl } from '../api/cover'
 
 const props = defineProps<{
   id: number
@@ -15,13 +16,18 @@ const props = defineProps<{
 
 const router = useRouter()
 const imgLoaded = ref(false)
+// 两阶段失败回退：代理缩图 → 原始直连 → 文字占位
+const coverStage = ref<'proxy' | 'direct' | 'placeholder'>('proxy')
 
 const safeCover = computed(() => {
-  let c = props.cover || ''
-  if (!c) return ''
-  if (!/^https?:\/\//i.test(c) && !c.startsWith('/api-proxy/')) c = ''
-  return c
+  const orig = props.cover || ''
+  if (!orig || coverStage.value === 'placeholder') return ''
+  if (!/^https?:\/\//i.test(orig) && !orig.startsWith('/api-proxy/')) return ''
+  if (coverStage.value === 'direct') return orig
+  return getCoverUrl(orig)
 })
+
+watch(() => props.cover, () => { imgLoaded.value = false; coverStage.value = 'proxy' })
 
 const shownSources = computed(() => {
   if (!props.availableSources?.length) return []
@@ -30,6 +36,14 @@ const shownSources = computed(() => {
 
 function goPlay() {
   router.push({ name: 'play', query: { id: String(props.id), title: props.title } })
+}
+
+function onCoverError() {
+  if (coverStage.value === 'proxy') {
+    coverStage.value = 'direct'
+  } else {
+    coverStage.value = 'placeholder'
+  }
 }
 </script>
 
@@ -47,6 +61,7 @@ function goPlay() {
           decoding="async"
           referrerpolicy="no-referrer"
           @load="imgLoaded = true"
+          @error="onCoverError"
           class="h-full w-full object-cover object-[center_top] transition duration-500 group-hover:scale-[1.06]"
           :class="imgLoaded ? 'opacity-100' : 'opacity-0'"
         />

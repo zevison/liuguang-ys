@@ -5,6 +5,7 @@ import { Search, Loader2, Film, Sparkles, X } from 'lucide-vue-next'
 import { fetchSearchProgressive, type SearchItem } from '../api'
 import { SOURCE_COLORS } from '../config/sources'
 import { addSearchHistory } from '../utils/history'
+import { getCoverUrl } from '../api/cover'
 
 const route = useRoute()
 const router = useRouter()
@@ -17,12 +18,28 @@ const respondedSources = ref<string[]>([])
 const isFinal = ref(false)
 let abortController: AbortController | null = null
 
-// 封面加载失败的条目 id 集合（走代理后站长可能拒绝，fallback 到文字占位）
-const brokenCovers = new Set<number>()
-function onCoverError(e: Event, itemId: number) {
-  const img = e.target as HTMLImageElement
-  brokenCovers.add(itemId)
-  img.style.display = 'none'
+// 每个条目两阶段封面回退状态：proxy → direct → placeholder
+const coverStages = new Map<number, 'proxy' | 'direct' | 'placeholder'>()
+
+function getEffectiveCover(item: SearchItem): string {
+  const orig = item.cover || ''
+  if (!orig) return ''
+  const stage = coverStages.get(item.id) || 'proxy'
+  if (stage === 'placeholder') return ''
+  if (stage === 'direct') return orig
+  return getCoverUrl(orig)
+}
+
+function onCoverError(item: SearchItem) {
+  const stage = coverStages.get(item.id) || 'proxy'
+  if (stage === 'proxy') {
+    coverStages.set(item.id, 'direct')
+    // 强制重渲染让 computed 重新取值
+    items.value = [...items.value]
+  } else {
+    coverStages.set(item.id, 'placeholder')
+    items.value = [...items.value]
+  }
 }
 
 const keyword = computed(() => (route.query.q as string) || '')
@@ -189,32 +206,32 @@ function sourceStyle(label: string) {
         <div class="relative aspect-[2/3] overflow-hidden bg-gradient-to-br from-white/[0.03] to-white/[0.06]">
           <!-- 图片骨架屏（加载中 pulse） + fallback 文字（加载失败时显示）-->
           <div
-            v-if="item.cover"
+            v-if="getEffectiveCover(item)"
             class="absolute inset-0 animate-pulse bg-gradient-to-br from-white/[0.04] to-white/[0.08] z-0"
           />
           <div
             class="absolute inset-0 z-10 flex items-center justify-center text-xl font-bold tracking-wider text-gray-500"
-            :class="item.cover ? 'opacity-0 pointer-events-none' : 'opacity-100'"
+            :class="getEffectiveCover(item) ? 'opacity-0 pointer-events-none' : 'opacity-100'"
           >{{ item.title.slice(0, 2) }}</div>
           <img
-            v-if="item.cover"
-            :src="item.cover"
+            v-if="getEffectiveCover(item)"
+            :src="getEffectiveCover(item)"
             :alt="item.title"
             loading="lazy"
             decoding="async"
             referrerpolicy="no-referrer"
             @load="($event.target as HTMLImageElement).style.opacity = '1'"
-            @error="delete (item as any).cover"
+            @error="onCoverError(item)"
             class="absolute inset-0 z-0 h-full w-full object-cover transition-opacity duration-300 group-hover:scale-105 opacity-0"
           />
           <!-- 更新标签 -->
           <div
-            v-if="item.cover && item.update"
+            v-if="getEffectiveCover(item) && item.update"
             class="absolute right-1.5 top-1.5 z-20 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm"
           >{{ item.update }}</div>
           <!-- hover 播放遮罩（仅桌面鼠标设备显示，iOS Safari 触摸会冻结 hover 状态）-->
           <div
-            v-if="item.cover"
+            v-if="getEffectiveCover(item)"
             class="absolute inset-0 z-20 hidden items-center justify-center bg-black/0 opacity-0 transition duration-300 md:flex md:bg-black/40 md:opacity-100 group-hover:bg-black/40 group-hover:opacity-100"
           >
             <div class="flex h-9 w-9 items-center justify-center rounded-full bg-brand-500/90 shadow-lg shadow-brand-500/40 backdrop-blur-sm transition md:scale-100 group-hover:scale-110">

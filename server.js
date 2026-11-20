@@ -14,7 +14,9 @@ import got from 'got'
 
 // 可选：Sharp 图片压缩（VPS 端把封面 213KB JPG → ~40KB WebP，加载快 5×）
 let sharp = null
-try { sharp = (await import('sharp')).default } catch {}
+try { sharp = (await import('sharp')).default } catch (error) {
+  console.warn('[cover] Sharp unavailable:', error.message)
+}
 
 dns.setDefaultResultOrder('ipv4first')
 
@@ -227,10 +229,17 @@ async function proxyApi(req, res) {
     const host = slashIdx === -1 ? rest : rest.slice(0, slashIdx)
     const rawPath = slashIdx === -1 ? '/' : rest.slice(slashIdx)
     if (!host) { res.writeHead(400); res.end('bad url'); return }
-    const targetUrl = 'https://' + host + rawPath
+    const [pathname, query] = rawPath.split(/\?(.*)/s, 2)
+    const isCover = host === 'p1.czzyplay.com' && /^\/images\/\d+\/poster$/.test(pathname) && query === 'cover=1'
+    const targetUrl = 'https://' + host + (isCover ? pathname : rawPath)
 
-    const cacheKey = host + rawPath
-    const kind = detectKind(rawPath)
+    const kind = detectKind(isCover ? pathname : rawPath)
+    const useWebp = kind === 'image' && (req.headers.accept || '').split(',').some(value => {
+      const [type, ...params] = value.trim().toLowerCase().split(';')
+      const quality = params.find(param => /^\s*q\s*=/.test(param))
+      return type.trim() === 'image/webp' && (!quality || Number(quality.split('=')[1]) > 0)
+    })
+    const cacheKey = host + rawPath + (kind === 'image' ? (useWebp ? '|webp' : '|jpeg') : '')
 
     if (kind) {
       const cached = tryCache(kind, cacheKey)
@@ -256,7 +265,7 @@ async function proxyApi(req, res) {
     // 透传客户端 Range 头 —— HLS.js 快进必须用 Range 分片
     // 某些 CDN（如 xgplay3.jimxtc.com）不支持 Range 会返回 402/502，
     // 代理层在 Range 失败时降级为完整下载（见下方 got 块）
-    if (req.headers['range']) {
+    if (!isCover && req.headers['range']) {
       upstreamHeaders['Range'] = req.headers['range']
     }
 
@@ -280,7 +289,7 @@ async function proxyApi(req, res) {
         const resp = await got.get(targetUrl, {
           headers: upstreamHeaders,
           responseType: 'buffer',
-          timeout: { request: PROXY_TIMEOUT_MS },
+          timeout: { request: isCover ? 4000 : PROXY_TIMEOUT_MS },
           followRedirect: true,
           retry: { limit: 0 },
         })
@@ -291,7 +300,7 @@ async function proxyApi(req, res) {
         // Range 降级：客户端带了 Range，但 CDN 不支持返回错误码
         // 去掉 Range 头，完整下载整个文件给客户端（客户端需要多少自己截）
         const httpErrCodes = [400, 402, 403, 500, 501, 502, 503]
-        if (req.headers['range'] && err.response && httpErrCodes.includes(err.response.statusCode)) {
+        if (upstreamHeaders['Range'] && err.response && httpErrCodes.includes(err.response.statusCode)) {
           try {
             delete upstreamHeaders['Range']
             const resp2 = await got.get(targetUrl, {
@@ -325,8 +334,10 @@ async function proxyApi(req, res) {
 
     const headers = {}
     if (ct) headers['Content-Type'] = ct
-    headers['Cache-Control'] = kind === 'image' ? 'public, max-age=86400, immutable' : 'no-store'
+    headers['Cache-Control'] = kind === 'image' && status === 200 ? 'public, max-age=86400, immutable' : 'no-store'
     headers['Access-Control-Allow-Origin'] = '*'
+    if (kind === 'image') headers['Vary'] = 'Accept'
+    if (isCover && status === 200 && !/^image\//i.test(ct || '')) throw new Error('Invalid cover response')
 
     if (kind && status === 200) {
       let buf = bodyBuf
@@ -338,15 +349,17 @@ async function proxyApi(req, res) {
         // 图片压缩：WebP 优先（支持 WebP 的浏览器小 ~60%），否则 JPG 重编码
         // 封面图盒子最大 ~200px 宽，给 400px 足够清晰（@2x retina）
         try {
-          const accept = req.headers['accept'] || ''
-          const useWebp = accept.includes('image/webp')
-          const out = sharp(buf).rotate().resize({ width: 400, height: 600, fit: 'cover' })
+          const out = sharp(buf).rotate().resize({ width: 400, height: 600, fit: 'cover', withoutEnlargement: isCover })
           let outBuf, outCt
           if (useWebp) { outBuf = await out.webp({ quality: 70, effort: 3 }).toBuffer(); outCt = 'image/webp' }
           else         { outBuf = await out.jpeg({ quality: 70, mozjpeg: true }).toBuffer(); outCt = 'image/jpeg' }
-          if (outBuf.length < buf.length) { buf = outBuf; headers['Content-Type'] = outCt }
-        } catch { /* sharp 失败 → 原样返回 */ }
+          if (isCover || outBuf.length < buf.length) { buf = outBuf; headers['Content-Type'] = outCt }
+        } catch (error) {
+          if (isCover) throw error
+        }
         putCache(kind, cacheKey, buf, headers)
+      } else if (isCover) {
+        headers['Cache-Control'] = 'no-store'
       } else {
         putCache(kind, cacheKey, buf, headers)
       }
@@ -358,7 +371,7 @@ async function proxyApi(req, res) {
     }
   } catch (e) {
     if (!res.headersSent) {
-      res.writeHead(502, { 'Content-Type': 'application/json' })
+      res.writeHead(502, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
       res.end(JSON.stringify({ error: String(e && e.message || e) }))
     } else {
       try { res.end() } catch {}
