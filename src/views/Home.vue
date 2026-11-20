@@ -144,7 +144,7 @@ onMounted(async () => {
 
     <!-- 热门 -->
     <section v-if="popular.length || loading" class="px-0">
-      <div class="mb-4 sm:mb-5 flex items-center gap-2.5">
+      <div class="mb-4 sm:mb-5 flex items-center justify-center gap-2.5">
         <div class="h-4 w-1 rounded-full bg-gradient-to-b from-brand-400 to-brand-600" />
         <h2 class="text-base font-semibold tracking-wide text-white">最近热门</h2>
         <span class="text-xs text-gray-500">· 实时更新</span>
