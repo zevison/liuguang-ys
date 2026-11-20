@@ -346,13 +346,13 @@ async function proxyApi(req, res) {
         parseAndPrefetchTs(buf, host, rawPath)
         buf = rewriteM3u8(buf, host)
       } else if (kind === 'image' && sharp) {
-        // 图片压缩：WebP 优先（支持 WebP 的浏览器小 ~60%），否则 JPG 重编码
-        // 封面图盒子最大 ~200px 宽，给 400px 足够清晰（@2x retina）
+        // 图片压缩：封面缩到 400x600 @2x retina，quality 50 比 70 省 30%+ 字节
+        // 实测 608KB 原图 → WebP q70e3 71KB / q50e5 57KB / JPEG q70 51KB / q50 35KB
         try {
           const out = sharp(buf).rotate().resize({ width: 400, height: 600, fit: 'cover', withoutEnlargement: isCover })
           let outBuf, outCt
-          if (useWebp) { outBuf = await out.webp({ quality: 70, effort: 3 }).toBuffer(); outCt = 'image/webp' }
-          else         { outBuf = await out.jpeg({ quality: 70, mozjpeg: true }).toBuffer(); outCt = 'image/jpeg' }
+          if (useWebp) { outBuf = await out.webp({ quality: 50, effort: 5 }).toBuffer(); outCt = 'image/webp' }
+          else         { outBuf = await out.jpeg({ quality: 50, mozjpeg: true }).toBuffer(); outCt = 'image/jpeg' }
           if (isCover || outBuf.length < buf.length) { buf = outBuf; headers['Content-Type'] = outCt }
         } catch (error) {
           if (isCover) throw error
