@@ -146,8 +146,8 @@ onMounted(async () => {
     <section v-if="popular.length || loading" class="px-0">
       <div class="mb-4 sm:mb-5 flex items-center justify-center gap-2.5">
         <div class="h-4 w-1 rounded-full bg-gradient-to-b from-brand-400 to-brand-600" />
-        <h2 class="text-base font-semibold tracking-wide text-white">最近热门</h2>
-        <span class="text-xs text-gray-500">· 实时更新</span>
+        <h2 class="text-base font-semibold tracking-wide text-white">今日更新</h2>
+        <span class="text-xs text-gray-500">· 最新上架</span>
       </div>
 
       <div v-if="loading" class="grid mx-auto grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 max-w-5xl">

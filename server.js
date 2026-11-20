@@ -12,6 +12,10 @@ import * as path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import got from 'got'
 
+// 可选：Sharp 图片压缩（VPS 端把封面 213KB JPG → ~40KB WebP，加载快 5×）
+let sharp = null
+try { sharp = (await import('sharp')).default } catch {}
+
 dns.setDefaultResultOrder('ipv4first')
 
 const PORT = process.env.PORT || 8000
@@ -330,6 +334,19 @@ async function proxyApi(req, res) {
         putCache(kind, cacheKey, buf, headers)
         parseAndPrefetchTs(buf, host, rawPath)
         buf = rewriteM3u8(buf, host)
+      } else if (kind === 'image' && sharp) {
+        // 图片压缩：WebP 优先（支持 WebP 的浏览器小 ~60%），否则 JPG 重编码
+        // 封面图盒子最大 ~200px 宽，给 400px 足够清晰（@2x retina）
+        try {
+          const accept = req.headers['accept'] || ''
+          const useWebp = accept.includes('image/webp')
+          const out = sharp(buf).rotate().resize({ width: 400, height: 600, fit: 'cover' })
+          let outBuf, outCt
+          if (useWebp) { outBuf = await out.webp({ quality: 70, effort: 3 }).toBuffer(); outCt = 'image/webp' }
+          else         { outBuf = await out.jpeg({ quality: 70, mozjpeg: true }).toBuffer(); outCt = 'image/jpeg' }
+          if (outBuf.length < buf.length) { buf = outBuf; headers['Content-Type'] = outCt }
+        } catch { /* sharp 失败 → 原样返回 */ }
+        putCache(kind, cacheKey, buf, headers)
       } else {
         putCache(kind, cacheKey, buf, headers)
       }
