@@ -423,47 +423,14 @@ export async function fetchHotTop(limit = 6): Promise<{ items: HotItem[]; source
   const source = SOURCES.find(s => s.label === '4K')!
   const host = source.apiHosts[0]
 
-  const MOVIE_TYPES = /剧情片|恐怖片|喜剧片|动作片|科幻片|纪录片|伦理片|爱情片|战争片|悬疑片|犯罪片|奇幻片|冒险片|灾难片/
-  const TV_TYPES = /国产剧|欧美剧|日本剧|韩国剧|日剧|韩剧|台剧|台湾剧|港台剧|海外剧|泰国剧|大陆剧|港剧/
-  const VARIETY_TYPES = /综艺/
-  const ANIME_TYPES = /动漫|动画|卡通/
-
-  function classify(typeName: string, name: string): 'movie' | 'tv' | 'variety' | 'anime' | 'other' {
-    if (MOVIE_TYPES.test(typeName)) return 'movie'
-    if (TV_TYPES.test(typeName)) return 'tv'
-    if (VARIETY_TYPES.test(typeName)) return 'variety'
-    if (ANIME_TYPES.test(typeName) || /动漫|动画/.test(name)) return 'anime'
-    return 'other'
-  }
-
   const raw = await withTimeout(
-    fetchJson(`${host}/?${new URLSearchParams({ ac: 'top', type: '0', limit: String(limit * 10) }).toString()}`),
+    fetchJson(`${host}/?${new URLSearchParams({ ac: 'top', type: '0', limit: String(limit) }).toString()}`),
     FETCH_TIMEOUT,
   )
   if (!raw?.list?.length) throw new Error('热门列表不可用')
 
-  // 严格配额：2 电影 + 2 电视剧 + 1 综艺 + 1 动漫
-  const QUOTA: Record<string, number> = { movie: 2, tv: 2, variety: 1, anime: 1 }
-  const picked: ApiVodRaw[] = []
-  const used = new Set<string>()
-
-  for (const item of raw.list) {
-    const cat = classify(item.type_name || '', item.vod_name || '')
-    const catKey = `${cat}:${item.vod_id}`
-    if (used.has(catKey)) continue
-    if ((QUOTA[cat] || 0) > 0) {
-      picked.push(item)
-      used.add(catKey)
-      QUOTA[cat]--
-      if (picked.length >= limit) break
-    }
-  }
-
-  while (picked.length < limit) {
-    const remaining = raw.list.filter(r => !picked.includes(r))
-    if (!remaining.length) break
-    picked.push(remaining[0])
-  }
+  // 全站热门榜前 N 条（无分类配额，播放量从高到低）
+  const picked = raw.list.slice(0, limit)
 
   const items: HotItem[] = picked.map(item => ({
     id: item.vod_id,
