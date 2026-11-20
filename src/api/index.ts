@@ -11,11 +11,9 @@ const FETCH_HEADERS = {
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120',
 }
 
-// 哪些站长原生支持 CORS（浏览器可直接 fetch）
-const CORS_OK_HOSTS = ['changzhang.tv']
-
-// 开发环境变量（仅 DEV 时 CORS 站长直连省一次代理请求）
-const DEV = import.meta.env.DEV
+// 运行时降级标记：App 原生模式自动跳过代理（没后端）；Web 模式代理永久挂了也跳过
+let _noProxy = false
+if (detectAppMode()) _noProxy = true
 
 // App 模式动态检测（运行时 getter，每次调用时重新检查）：
 //   没有后端 server.js，同源 /api-proxy/ 没人接 → 必须直连站长 HTTPS API
@@ -61,14 +59,7 @@ if (import.meta.env.DEV) {
   }) } catch {}
 }
 
-// 运行时降级标记：如果 /api-proxy/ 返回 404（App 里没人接），自动降级为直连
-let _proxyFailed = false
-
-function isCorsOk(host: string): boolean {
-  if (detectAppMode()) return true
-  if (_proxyFailed) return true  // 代理已失效 → 全部直连
-  return CORS_OK_HOSTS.some((ok) => host === ok || host.endsWith('.' + ok))
-}
+// 运行时降级标记已经在文件顶部声明过 _noProxy
 
 /**
  * 从 ApiVodRaw 里挑出封面 URL，带 changzhang 固定 CDN 兜底：
@@ -134,7 +125,7 @@ export function toProxyUrl(url: string): string {
   // 这些 CDN 对家庭宽带/手机 IP 放行，但对云服务器 IP（VPS）封 403
   // 直连 = 用用户自己的 IP → 绕过封锁
   if (detectAppMode()) return url  // App 原生模式：直连
-  if (_proxyFailed) return url     // 代理已失效 → 降级直连
+  if (_noProxy) return url         // 代理已永久挂 → 跳过直连尝试
 
   // Web 模式也默认直连 — 所有 CDN/API 都带 CORS 头
   // fetchJson 失败时会自动降级走 /api-proxy/ 重试
@@ -174,14 +165,17 @@ async function fetchJson(url: string): Promise<ApiResp> {
     if (resp.ok) return (await resp.json()) as ApiResp
 
     // Step 2: 直连失败 → 自动降级走 /api-proxy/ 重试
-    // 可能原因：CORS block、CDN 临时不通、网络波动
-    // proxy 路径显式拼接（toProxyUrl 现在默认直连，不再走 proxy）
+    // 代理也不可用时永久标记，省后续每次的代理尝试开销
     const proxyUrl = url.replace(/^https?:\/\//i, '/api-proxy/')
-    if (!_proxyFailed) {
-      const resp2 = await fetch(proxyUrl, { headers: FETCH_HEADERS, signal: controller.signal })
-      if (resp2.ok) {
-        _proxyFailed = true  // 之后都走 proxy（省一次直连尝试）
-        return (await resp2.json()) as ApiResp
+    if (!_noProxy) {
+      try {
+        const resp2 = await fetch(proxyUrl, { headers: FETCH_HEADERS, signal: controller.signal })
+        if (resp2.ok) return (await resp2.json()) as ApiResp
+        // 代理返回错误码（如 404）→ 永久跳过代理
+        _noProxy = true
+      } catch {
+        // 代理网络错误（App 原生模式）→ 永久跳过代理
+        _noProxy = true
       }
     }
 
