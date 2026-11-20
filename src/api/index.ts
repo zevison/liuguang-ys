@@ -11,45 +11,36 @@ const FETCH_HEADERS = {
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120',
 }
 
-// 运行时降级标记：App 原生模式自动跳过代理（没后端）；Web 模式代理永久挂了也跳过
-let _noProxy = false
-if (detectAppMode()) _noProxy = true
+// ==== 全部函数/变量先声明，再做顶层初始化，避免 TDZ 时序问题 ====
+
+// App 模式手动开关
+let _forceAppMode = false
+;(window as any).__FORCE_APP_MODE = () => { _forceAppMode = true }
 
 // App 模式动态检测（运行时 getter，每次调用时重新检查）：
 //   没有后端 server.js，同源 /api-proxy/ 没人接 → 必须直连站长 HTTPS API
-//
-// 检测维度（覆盖所有容器）：
-//   1. window.__TAURI__           — Tauri Desktop (Windows/macOS/Linux)
-//   2. window.Capacitor.isNativePlatform() — Capacitor Android/iOS
-//   3. location.origin            — Tauri=http://tauri.localhost, Capacitor=https://localhost
-//   4. location.protocol          — tauri://, capacitor://, file://
-//   5. __FORCE_APP_MODE__ 手动开关 — vconsole 调试用
-let _forceAppMode = false
-;(window as any).__FORCE_APP_MODE = () => { _forceAppMode = true }
 function detectAppMode(): boolean {
   if (_forceAppMode) return true
   if (typeof window === 'undefined') return false
-  // Tauri API 存在
   if ((window as any).__TAURI__) return true
-  // Capacitor 原生
   try {
     const C = (window as any).Capacitor
     if (C?.isNativePlatform?.()) return true
   } catch {}
-  // Tauri Windows origin: http://tauri.localhost
   const origin = window.location.origin || ''
   if (origin.includes('tauri.localhost')) return true
-  // Capacitor Android origin: https://localhost
-  if (origin === 'https://localhost' || origin === 'http://localhost') {
-    // 但 localhost 也可能是 Vite dev server — 加 Capacitor 再确认
-    if ((window as any).Capacitor) return true
-  }
-  // URL 协议兜底
+  if ((origin === 'https://localhost' || origin === 'http://localhost') && (window as any).Capacitor) return true
   const proto = window.location.protocol || ''
   if (proto === 'tauri:' || proto === 'capacitor:' || proto === 'file:') return true
   return false
 }
-// 模块初始化时先打一次日志（生产环境不输出）
+
+// 运行时降级标记：App 原生模式自动跳过代理（没后端）；Web 模式代理永久挂了也跳过
+// 注意：detectAppMode() 上面已经定义 + _forceAppMode 上面已经声明 → 这里初始化无 TDZ 问题
+let _noProxy = false
+if (typeof window !== 'undefined' && detectAppMode()) _noProxy = true
+
+// 模块初始化日志（生产不输出）
 if (import.meta.env.DEV) {
   try { console.log('[api] isAppMode:', detectAppMode(), {
     hasTauri: !!(window as any).__TAURI__,
@@ -58,8 +49,6 @@ if (import.meta.env.DEV) {
     protocol: window.location.protocol,
   }) } catch {}
 }
-
-// 运行时降级标记已经在文件顶部声明过 _noProxy
 
 /**
  * 从 ApiVodRaw 里挑出封面 URL，带 changzhang 固定 CDN 兜底：
